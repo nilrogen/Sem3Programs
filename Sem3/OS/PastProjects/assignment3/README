@@ -1,0 +1,25 @@
+Michael Gorlin
+Assignment 3:
+
+Degree of success: 100%
+
+Once learning about the nessessary functions for creating semephores and shared memory
+this assignment became very easy. My only issues were as follows:
+	1. My mutex semaphore was initially set to 0, where it should have been 1. 
+	2. I miswrote what should have been the temp variable j as i, causing my values randomly
+	   show up as negatives or massive. 
+	3. Had trouble formatting my graphs in libreoffice.
+
+My graphs are stored in the Graphs.ods file, which was created in libreoffice. Should you
+be unable to read the file the Data I collected for the graphs are as follows:
+(Each iteration is run with 5 loops)
+
+
+Table 1:
+Number of Slots  |  10  |  25  |  40  |  50  |  60  |  75  |  100
+Deadlocks        |   5  |   4  |   2  |   2  |   0  |   0  |    0
+
+Table 2:
+Number of Consumers | 1 | 3 | 5 | 7 | 9 
+Deadlocks           | 0 | 1 | 2 | 4 | 3
+
