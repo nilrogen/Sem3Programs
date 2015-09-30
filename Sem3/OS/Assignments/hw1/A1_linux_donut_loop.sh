@@ -7,12 +7,15 @@
 # of the 10 runs ended in deadlock
 
 if [ -z $1 ]
-	then
+then
 	echo "USAGE: A1_linux_donut_loop.sh  number_of_runs_integer"
 	echo "Try the command again"
 	echo " "
 fi
-
+if [ -z $1 ]
+then
+	let $2 = 1
+fi
 echo " "
 echo " "
 echo " "
@@ -20,6 +23,7 @@ echo "The configuration is for $1 LOOPS"
 echo " "
 
 local1=$1
+local2=$2
 lpcnt=1
 count=0
 while test $local1 -ne 0
@@ -30,8 +34,10 @@ do
 	echo " "
 	./producer >  prod_out.txt & 
 	sleep 1 
-	./consumer 1 > c1 & ./consumer 2 > c2 & ./consumer 3 > c3 & ./consumer 4 > c4 & ./consumer 5 > c5 &
-	sleep 7
+	for i in `seq 1 $local2`; do
+		./consumer $i > data/c$i &
+	done
+	sleep 8
 	pid=`ps | grep -v 'grep' | grep 'producer' | cut -c1-6`
 	if ps | grep -v 'grep' | grep -q 'consumer'
 	then

@@ -34,7 +34,7 @@
 
 /* DEFINE FOR PROGRAM */
 #define D_TYPES 4
-#define D_SIZE 40
+#define D_SIZE 50
 
 #define N_DOZEN 10
 
