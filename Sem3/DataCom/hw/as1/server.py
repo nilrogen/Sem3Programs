@@ -87,6 +87,12 @@ class ConnectionThread(Thread):
     def put(self):
         pass
 
+class blgag:
+    def __init__(self, cs, ca, n):
+        self.connSocket = cs
+        self.ca = ca
+        self.n  = n
+
     def handle(self):
         try:
             msg = self.connSocket.recv(512)
@@ -108,19 +114,21 @@ if __name__ == '__main__':
 
     signalHandler = setupSignalHandler(socket)
 
-    tcount = 1
-
     try:
         while 1:
             cs, ca = serverSocket.accept()
 
-            tname = "CThread-" + str(tcount)
-            print "Received request:", ca, "Creating new Thread: ", tname
-            tnew = ConnectionThread(cs, ca, tname)
-            openedthreads.append(tnew)
-            tnew.run()
+            print "Received request:", ca
+            msg = cs.recv(512)
+            print msg
+            resp = generateResponse(R_404, {"Connection" : "Close"}, "<html><body>404 Not Found</body></html>")
+            cs.send(resp)
+
+            cs.shutdown(SHUT_RD)
             cs.close()
-            tcount += 1 
     except IOError: 
         pass
+    finally:
+        serverSocket.shutdown(SHUT_RDWR)
+        serverSocket.close()
         
