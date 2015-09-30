@@ -1,2 +1,4 @@
 *.o
-tests/
+*.swp
+data/*
+*.txt
