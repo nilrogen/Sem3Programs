@@ -1,3 +1,7 @@
+/**
+ * Author: Michael Gorlin
+ * Date: 2015-10-1
+ */
 #ifndef __ASSIGNMENT1_H
 #define __ASSIGNMENT1_H
 

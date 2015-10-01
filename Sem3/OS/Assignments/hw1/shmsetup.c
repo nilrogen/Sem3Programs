@@ -1,3 +1,16 @@
+/**
+ * Author: Michael Gorlin
+ * Date: 2015-10-01
+ *
+ * This file contains the functions to create or link the POSIX shared memory
+ * region. 
+ *
+ * The consumer should only use the 'safe' functions, which do not create
+ * or unlink any region. 
+ *
+ * The producer should use the other functions that handle creation, truncation, 
+ * and proper deletion of the region. 
+ */
 #include "assignment1.h"
 
 extern int setupSHM(bool create) {

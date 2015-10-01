@@ -2,3 +2,5 @@
 *.swp
 data/*
 *.txt
+consumer
+producer

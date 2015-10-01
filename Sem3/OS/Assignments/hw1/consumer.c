@@ -1,3 +1,7 @@
+/**
+ * Author: Michael Gorlin
+ * Date: 2015-10-1
+ */
 #include "assignment1.h"
 
 char *gettimestring(const struct timeval *time) {
@@ -44,7 +48,7 @@ int main(int argc, char *argv[]) {
 		Pmutex(p_data, cdonut);
 
 		// CS
-		donuts[i][0] = p_data->p_flavors[cdonut][p_data->p_out[cdonut]]; // Get
+		donuts[i][0] = p_data->p_flavors[cdonut][p_data->p_out[cdonut]]; 
 		p_data->p_out[cdonut] = (p_data->p_out[cdonut] + 1) % D_SIZE;
 		donuts[i][1] = cdonut;
 

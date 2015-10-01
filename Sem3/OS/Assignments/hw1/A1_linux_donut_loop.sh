@@ -22,6 +22,12 @@ echo " "
 echo "The configuration is for $1 LOOPS"
 echo " "
 
+if [ -e data/ ]
+then
+	rm -r data/
+	mkdir data
+fi
+
 local1=$1
 local2=$2
 lpcnt=1

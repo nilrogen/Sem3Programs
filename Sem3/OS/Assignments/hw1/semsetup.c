@@ -1,8 +1,16 @@
+/**
+ * Author: Michael Gorlin
+ * Date: 2015-10-01
+ *
+ * This file contains functions definitions to set up the 12 semaphores
+ * needed for the POSIX implementation of assignment 1.
+ */
 #include "assignment1.h"
+
 
 extern int setupSemaphores(donut_t *val) {
 	int i, j;
-	// { insem, outsem, mutex }
+	// format: [ insem, outsem, mutex ]
 	int args[] = { D_SIZE, 0, 1 };
 	for (i = 0; i < D_TYPES; i++) {
 		for (j = 0; j < 3; j++) {

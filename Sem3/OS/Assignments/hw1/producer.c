@@ -1,7 +1,10 @@
+/**
+ * Author: Michael Gorlin
+ * Date: 2015-10-1
+ */
 #include "assignment1.h"
 
 #define PRINT 1
-
 
 static donut_t *p_data;
 
