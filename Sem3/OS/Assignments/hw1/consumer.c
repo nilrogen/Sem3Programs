@@ -44,7 +44,7 @@ int main(int argc, char *argv[]) {
 		Pmutex(p_data, cdonut);
 
 		// CS
-		donuts[i][0] = p_data->p_flavors[cdonut][p_data->p_out[i]]; // Get
+		donuts[i][0] = p_data->p_flavors[cdonut][p_data->p_out[cdonut]]; // Get
 		p_data->p_out[cdonut] = (p_data->p_out[cdonut] + 1) % D_SIZE;
 		donuts[i][1] = cdonut;
 
