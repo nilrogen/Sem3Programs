@@ -7,6 +7,18 @@ Results can be found in the data/c* files which is the output for a run with
 5 consumers and a buffer size of 50. The graphs can be found in the graphs.xls or
 graphs.pdf. 
 
+I did a large number of tests. At varying sleep lengths, ultimately settling on 
+eight seconds. Based on my graphs both variables are linear in nature. Fitting
+the Buffer_size Vs. Probability data to a linear model gives me a function of roughly: 
+	probabilty =  1.5 - .02*size.
+
+The data for Number of Consumers Vs. Probability was tested with a buffer size of 45. 
+The decision to pick 45 as opposed to 40 came down to testing both for ten trials.
+45 resulted in 5 deadlocks and 40 resulted in 8, 
+
+Its model is roughly:
+	probability = -0.15 + .1*Consumers
+
 This is the POSIX implementation of the assignment. I found the POSIX api 
 was significantly less "magical" then the System V api. The idea of creating
 a file and then mapping it to each processes memory space is much more intuitive. 
