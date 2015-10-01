@@ -7,7 +7,6 @@
  */
 #include "assignment1.h"
 
-
 extern int setupSemaphores(donut_t *val) {
 	int i, j;
 	// format: [ insem, outsem, mutex ]

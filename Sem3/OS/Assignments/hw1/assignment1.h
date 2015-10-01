@@ -29,6 +29,8 @@
 
 #define MEMLOCATION "/test_shm"
 #define O_NORMAL O_CREAT | O_RDWR
+
+// O_CREATION not used
 #define O_CREATION O_NORMAL | O_EXCL
 
 #define PROT_FLAGS PROT_WRITE | PROT_READ

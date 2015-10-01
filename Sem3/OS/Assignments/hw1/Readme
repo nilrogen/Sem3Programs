@@ -1,0 +1,37 @@
+Michael Gorlin
+91.515
+Assignment 1
+Degree of completion: 100%
+
+Results can be found in the data/c* files which is the output for a run with
+5 consumers and a buffer size of 50. The graphs can be found in he .xls or
+.pdf. 
+
+This is the POSIX implementation of the assignment. I found the POSIX api 
+was significantly less "magical" then the System V api. The idea of creating
+a file and then mapping it to each processes memory space is much more intuitive. 
+
+My only issues with setting up the region were the correct order of operations in
+it's creation and linking. For reference:
+
+Creation/Linking:
+
+	Producer: 					Consumer:
+	-------- 					--------
+	shm_open 					shm_open
+	ftruncate 					mmap	
+	mmap
+
+Removal:
+	shm_unlink 					munmap	
+	munmap
+		
+
+I had a strange non-error in my program that I feel should have catastrophically
+failed. Line 51 of consumer.c the line used to be:
+		donuts[i][0] = p_data->p_flavors[cdonut][p_data->p_out[i]]; 
+
+The variable 'i' ranges from 0 to 119, p_data->p_out can only index from 0 to D_SIZE.
+So I feel like I should have had a Seg Fault somewhere. 
+
+
