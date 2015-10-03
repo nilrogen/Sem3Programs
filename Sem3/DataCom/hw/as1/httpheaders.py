@@ -7,8 +7,12 @@
 """
 
 # Response Status constants.
-R_OK  = "HTTP/1.1 200 OK"
-R_404 = "HTTP/1.1 404 Not Found"
+RES_OK  = "HTTP/1.1 200 OK"
+RES_404 = "HTTP/1.1 404 Not Found"
+
+# REQUEST TYPES
+REQ_GET = "GET"
+REQ_PUT = "PUT"
 
 """
 " This method generates data to be sent.
@@ -30,6 +34,16 @@ def generateResponse(status, headerargs, data):
     resp += "\r\n" + data
 
     return resp
+ 
+
+def generateRequest(hostname, rtype, headerargs = {}):
+    resp =  '%s %s HTTP/1.0\r\n' % (rtype, hostname)
+
+    for k, v in headerargs.iteritems():
+        resp += '%s: %s\r\n' % (str(k), str(v))
+    resp += '\r\n'
+    return resp
+       
 
 class headerHandler:
     def __init__(self, message):
