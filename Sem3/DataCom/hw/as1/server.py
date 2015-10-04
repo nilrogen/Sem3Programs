@@ -6,11 +6,11 @@
 """
 
 from socket import *
-
 import os 
+import glob
+import argparse as ap
 
 from httpheaders import *
-import glob
 
 """
 " Translates the requsted pathname into an absolute path. 
@@ -42,13 +42,18 @@ def getFilePath(location):
     
     return path
 
+    
+
 if __name__ == '__main__':
+    argp = ap.ArgumentParser(description='A simple webserver')
+    argp.add_argument('port', type=int, help='The port number to open the socket')
+    args = argp.parse_args()
     serverSocket = socket(AF_INET, SOCK_STREAM)
 
     # Set to whatever you need. This is ip of my virtual machine
     serverSocket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
-    #serverSocket.bind(('192.168.33.10', 30009))
-    serverSocket.bind(('localhost', 30009))
+    serverSocket.bind(('192.168.33.10', 30009))
+    #serverSocket.bind(('localhost', args.port))
     serverSocket.listen(2)
 
     #signalHandler = setupSignalHandler(socket)
@@ -56,10 +61,10 @@ if __name__ == '__main__':
     try:
        while 1:
             cs, ca = serverSocket.accept()
-
             print "Received request:", ca
             msg = cs.recv(512)
             print msg
+            print parseType(msg.split('\r\n')[0], REQ_V)
             resp = generateResponse(RES_404, {"Connection" : "Close"}, "<html><body>404 Not Found</body></html>")
             cs.send(resp)
             cs.close()

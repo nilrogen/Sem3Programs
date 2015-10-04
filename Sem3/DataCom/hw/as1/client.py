@@ -1,12 +1,21 @@
+from socket import *
 import os
 import sys
-from socket import *
+import argparse as ap
 
 from httpheaders import *
 
 if __name__ == '__main__':
-    hostname = 'www.cs.uml.edu'
-    port = 80
+    argp = ap.ArgumentParser(description='Client for webserver')
+    argp.add_argument('host', type=str, help='Hostname')
+    argp.add_argument('port', type=int, help='Port Number')
+    argp.add_argument('type', type=str, help='Type of request')
+    argp.add_argument('file', type=str, help='The file to get')
+
+    args = argp.parse_args()
+
+    hostname = args.host
+    port = args.port
     for res in getaddrinfo(hostname, port, AF_INET, SOCK_STREAM):
         print res
         af, stype, a,b, addr = res
@@ -19,15 +28,24 @@ if __name__ == '__main__':
             sock.close()
             sys.exit(1)
         
-        req = generateRequest('/', REQ_GET)
+        if args.type.lower() == 'get':
+            req = generateRequest(args.file, REQ_GET)
+        elif args.type.lower() == 'put':
+            req = generateRequest(args.file, REQ_PUT)
+        else:
+            req = generateRequest(args.file, REQ_GET)
+
         print req
         sock.sendall(req)
-        data = sock.recv(1024)
-        print data
+        data = ''
+        while 1:
+            tmp = sock.recv(1024)
+            if not tmp:
+                break
+            data += tmp
+        typeinfo, fields, body = parseHeader(data, RES_V)
+
+
+
         sock.close()
-
-
-
-
-            
 
