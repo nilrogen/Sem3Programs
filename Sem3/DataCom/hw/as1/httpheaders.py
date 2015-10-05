@@ -14,8 +14,12 @@ RES_404 = "HTTP/1.0 404 Not Found"
 REQ_GET = "GET"
 REQ_PUT = "PUT"
 
-REQ_V = 0
-RES_V = 1
+RES_V = 0
+REQ_V = 1
+
+PUT_V = 1
+GET_V = 0
+
 
 """
 " This method generates data to be sent.
@@ -44,23 +48,51 @@ def generateRequest(fpath, rtype, headerargs = {}):
     for k, v in headerargs.iteritems():
         resp += '%s: %s\r\n' % (str(k), str(v))
     resp += '\r\n'
+
     return resp
        
 
+"""
+" Parses the first line of the message, (eg GET / Http/1.1
+"""
 def parseType(message, htype):
     splitv = message.split(' ')
-    print splitv
 
     if htype == RES_V: # Response
         return (splitv[0], splitv[1], ' '.join(splitv[2:]))
     elif htype == REQ_V: #Request
-        return (splitv[0], splitv[1], splitv[2])
+        if splitv[0].upper() == REQ_GET:
+            return (splitv[0], splitv[1], splitv[2])
+        else:
+            return (splitv[0], splitv[1])
 
 
+"""
+" This function parses a http request/response. 
+" 
+" message - The 'entire' message.
+" htype - The type of message. Either: REQ_V or RES_V
+"
+" returns - A 3-tuple of types (2/3-tuple, dict, string)
+"   rv[0] - A 2 or 3-tuple (depending on message type) of first line
+"   rv[1] - A dictionary containing the headers key-value pairs. 
+"   rv[2] - The body of the message (or None)
+"
+"""
 def parseHeader(message, htype):
     splitv = message.split('\r\n')
     htype = parseType(splitv[0], htype)
-    fielddict = {}
-    print splitv
-    return htype
+    fields = {}
+
+    for val in splitv[1:]:
+        if val == '':
+            break
+        tmp = val.split(': ') 
+        fields[tmp[0]] = tmp[1]
+    if splitv[-1] == '':
+        body = None
+    else:
+        body = message.split('\r\n\r\n')[1]
+
+    return htype, fields, body
 

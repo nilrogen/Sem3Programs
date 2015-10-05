@@ -1,0 +1,18 @@
+Michael Gorlin
+91.515 Assignment 1 
+
+
+Server Tests:
+	Condition:
+		A Web browser on my host machine can correctly render the simple
+   		website in this directory (index.html, index.css). All invalid
+		requests send 404 Not Found (link.html)
+	Result:
+		Works perfectly.
+
+
+	Condition:
+		
+		
+
+	   

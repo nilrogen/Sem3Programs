@@ -27,10 +27,13 @@ if __name__ == '__main__':
             sock.close()
             sys.exit(1)
 
-        hfdict = { 'Host' : '%s:%d' % addr }
+         hfdict = { 'Host' : '%s:%d' % addr }
+         print hfdict
+
+
         
         if args.type.upper() == REQ_GET:
-            req = generateRequest(args.file, REQ_GET, hfdict)
+            req = generateRequest(args.file, REQ_GET)
         elif args.type.upper() == REQ_PUT:
             fout = open(args.file, 'r')
             if fout is None:
@@ -38,8 +41,7 @@ if __name__ == '__main__':
                 sys.exit(1)
                 
             body = fout.read()
-            hfdict['Content-Length'] = len(body)
-            req = generateRequest(args.file, REQ_PUT, hfdict)
+            req = generateRequest(args.file, REQ_PUT, {'Content-Length': len(body)})
             req += body
             fout.close()
         else:

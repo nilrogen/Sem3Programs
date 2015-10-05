@@ -1,0 +1,8 @@
+HTTP/1.1 405 Method Not Allowed
+Date: Mon, 05 Oct 2015 19:22:22 GMT
+Server: Apache/2.2.22 (Ubuntu)
+Allow: OPTIONS,GET,HEAD,POST
+Vary: Accept-Encoding
+Content-Length: 296
+Content-Type: text/html; charset=iso-8859-1
+
