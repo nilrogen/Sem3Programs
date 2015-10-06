@@ -13,7 +13,7 @@ Server Tests:
 	Condition:
 		Handle PUT requests, IF the file exists the server sends
 		403 Forbidden, otherwise it saves the file to disk and 
-		responds with 200 OK.  This is for a small file.
+		responds with 201 Created.  This is for a small file.
 	Result:
 		Works. 
 
