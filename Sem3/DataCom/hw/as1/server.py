@@ -13,6 +13,7 @@ import argparse as ap
 from httpheaders import *
 
 
+SERVER_403 = '<html><body>403 FORBIDDEN</body></html>'
 SERVER_404 = '<html><body>404 Not Found</body></html>'
 
 """
@@ -89,8 +90,16 @@ def handleGetResponse(path, fields):
 " written to.
 """
 def handlePutResponse(path, fields, body):
-   
-    pass
+    if os.path.exists(path):
+        fields['Connection'] = 'Close'
+        return generateResponse(RES_403, fields, SERVER_403)
+    fout = open(path, 'w')
+    fout.write(body)
+    fout.close()
+    return generateResponse(RES_OK, fields, "")
+
+    
+    
 
 class RThread(Thread):
     """
@@ -106,7 +115,6 @@ class RThread(Thread):
     def handle(self):
         print 'SERVER ----- Thread'
         msg = self.getMessage()
-        print 'SERVER ----- \n', msg
         if not msg:
             print "SERVER ----- PHANTOM REQEST DETECTED"
             return
