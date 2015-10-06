@@ -46,9 +46,6 @@ def getFilePath(location):
     
     return path
 
-
-    
-
 class RThread(Thread):
     """
     " This is the thread object that handles requests.
@@ -117,7 +114,7 @@ class RThread(Thread):
         fout = open(path, 'w')
         fout.write(body)
         fout.close()
-        return generateResponse(RES_OK, fields, "")
+        return generateResponse(RES_CREAT, fields, "")
 
     def handle(self):
         print 'SERVER ----- Thread'
@@ -139,7 +136,10 @@ if __name__ == '__main__':
 
     # Set to whatever you need. This is ip of my virtual machine
     serverSocket.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
-    serverSocket.bind(('192.168.33.10', 30009))
+    
+    # Set this to whichever locations you need. 
+    # 192.168.33.10 is the IP I set for my vagrant virtual machine. 
+    serverSocket.bind(('192.168.33.10', args.port))
     #serverSocket.bind(('localhost', args.port))
     serverSocket.listen(2)
 

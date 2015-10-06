@@ -7,9 +7,11 @@
 """
 
 # Response Status constants.
-RES_OK  = 'HTTP/1.0 200 OK'
-RES_403 = 'HTTP/1.0 403 Forbidden'
-RES_404 = 'HTTP/1.0 404 Not Found'
+RES_OK    = 'HTTP/1.0 200 OK'
+RES_CREAT = 'HTTP/1.0 201 Created'
+
+RES_403   = 'HTTP/1.0 403 Forbidden'
+RES_404   = 'HTTP/1.0 404 Not Found'
 
 # REQUEST TYPES
 REQ_GET = "GET"
