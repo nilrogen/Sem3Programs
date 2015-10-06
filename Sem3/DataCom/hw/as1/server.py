@@ -47,58 +47,6 @@ def getFilePath(location):
     return path
 
 
-def handleMessage(msg):
-    title, fields, body = parseHeader(msg, REQ_V)
-    if title[0].upper() == REQ_GET:
-        return handleGetResponse(title[1], fields)
-    else:
-        return handlePutResponse(title[1], fields, body)
-
-
-"""
-" This function handles a get request, by finding the file path
-" and then either: reads the file and generates a 200 OKAY response
-" or generates a 404 Not Found response.
-"
-" path - the path send by the client.
-" fields - additional header fieldsVk
-"
-" returns a valid HTTP get response
-"""
-def handleGetResponse(path, fields):
-
-    filepath = getFilePath(path)
-
-    if filepath is None:
-        return generateResponse(RES_404, fields, SERVER_404)
-    fread = open(filepath, 'r')
-    rspbody = fread.read()
-    resp = generateResponse(RES_OK, fields, rspbody)
-    fread.close()
-
-    return resp
-
-"""
-" Handles a put request by writing the contents of body to 
-" the specified file
-"
-" path - the path send by the client
-" fields - additional header fields
-" body - the contents of the body in the PUT request
-"
-" returns a valid HTTP put response, assuming the file can be
-" written to.
-"""
-def handlePutResponse(path, fields, body):
-    if os.path.exists(path):
-        fields['Connection'] = 'Close'
-        return generateResponse(RES_403, fields, SERVER_403)
-    fout = open(path, 'w')
-    fout.write(body)
-    fout.close()
-    return generateResponse(RES_OK, fields, "")
-
-    
     
 
 class RThread(Thread):
@@ -110,7 +58,66 @@ class RThread(Thread):
         self.csock = csock
 
     def getMessage(self):
-        return self.csock.recv(4028)
+        return self.csock.recv(4096)
+
+    def handleMessage(self, msg):
+        title, fields, body = parseHeader(msg, REQ_V)
+        if title[0].upper() == REQ_GET:
+            return self.handleGetResponse(title[1], fields)
+        else:
+            return self.handlePutResponse(title[1], fields, body)
+
+    """
+    " This function handles a get request, by finding the file path
+    " and then either: reads the file and generates a 200 OKAY response
+    " or generates a 404 Not Found response.
+    "
+    " path - the path send by the client.
+    " fields - additional header fields
+    "
+    " returns a valid HTTP get response
+    """
+    def handleGetResponse(self, path, fields):
+
+        filepath = getFilePath(path)
+        if filepath is None:
+            return generateResponse(RES_404, fields, SERVER_404)
+
+        fread = open(filepath, 'r')
+        rspbody = fread.read()
+        resp = generateResponse(RES_OK, fields, rspbody)
+        fread.close()
+
+        return resp
+
+    """
+    " Handles a put request by writing the contents of body to 
+    " the specified file
+    "
+    " path - the path send by the client
+    " fields - additional header fields
+    " body - the contents of the body in the PUT request
+    "
+    " returns a valid HTTP put response, assuming the file can be
+    " written to.
+    """
+    def handlePutResponse(self, path, fields, body):
+        if os.path.exists(path):
+            fields['Connection'] = 'Close'
+            return generateResponse(RES_403, fields, SERVER_403)
+
+        # This part handles a message that is larger then 4094 - len(header)
+        # bytes. It works well enough, but the client may have issues. 
+        if 'Content-Length' in fields.keys():
+            tmp = int(fields['Content-Length'])
+            while tmp > len(body):
+                body += self.getMessage()
+                tmp -= 4028
+                
+        fout = open(path, 'w')
+        fout.write(body)
+        fout.close()
+        return generateResponse(RES_OK, fields, "")
 
     def handle(self):
         print 'SERVER ----- Thread'
@@ -118,7 +125,7 @@ class RThread(Thread):
         if not msg:
             print "SERVER ----- PHANTOM REQEST DETECTED"
             return
-        rsp = handleMessage(msg)
+        rsp = self.handleMessage(msg)
         self.csock.send(rsp)
         self.csock.close()
             

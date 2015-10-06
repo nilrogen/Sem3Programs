@@ -43,6 +43,15 @@ def generateResponse(status, headerargs, data):
 
     return resp
  
+"""
+" This method generates a request in a manner similar to generateResponse
+"
+" fpath - The path of the file requested or to be sent
+" rtype - The type of request (either REQ_PUT or REQ_GET)
+" headerargs - dictionary of header fields.
+"
+" return - A formatted http request message.
+"""
 def generateRequest(fpath, rtype, headerargs = {}):
     resp =  '%s %s HTTP/1.0\r\n' % (rtype, fpath)
 
@@ -54,18 +63,21 @@ def generateRequest(fpath, rtype, headerargs = {}):
        
 
 """
-" Parses the first line of the message, (eg GET / Http/1.1
+" Parses the first line of the message, (e.g. GET / Http/1.1)
+"
+" message - The message to parse.
+" htype - the type of message (RES_V or REQ_V)
+"
+" return - a 3 or 2 tuple:
+"  if htype == RES_V then its formatted (version, status_code, status_string)
+"  if htype == REQ_V and is a PUT request: (GET/PUT, path, version)
 """
 def parseType(message, htype):
     splitv = message.split(' ')
-
     if htype == RES_V: # Response
         return (splitv[0], splitv[1], ' '.join(splitv[2:]))
     elif htype == REQ_V: #Request
-        if splitv[0].upper() == REQ_GET:
-            return (splitv[0], splitv[1], splitv[2])
-        else:
-            return (splitv[0], splitv[1])
+        return (splitv[0], splitv[1], splitv[2])
 
 
 """

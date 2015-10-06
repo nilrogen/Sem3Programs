@@ -10,9 +10,65 @@ Server Tests:
 	Result:
 		Works perfectly.
 
+	Condition:
+		Handle PUT requests, IF the file exists the server sends
+		403 Forbidden, otherwise it saves the file to disk and 
+		responds with 200 OK.  This is for a small file.
+	Result:
+		Works. 
 
 	Condition:
-		
+		Handle PUT request for large file. In this case I used a pdf
+		of around 47 KB.
+	Result:
+		Worked. Although client program crashed with socket error 104
 		
 
-	   
+Client Tests:
+	Condition:
+		Sent requests to www.cs.uml.edu using both my client and curl.
+		Compared results
+	Results:
+		Both result in the same returned document
+
+	Condition:
+		Sent GET to www.uml.edu, whose content length is 35771 bytes long. 
+	Result:
+		No issues with a content length that long
+
+	Condition:
+		My virtual machine is running an Apache web server so I sent
+		GET requests to this server. Compared results to the results
+		the program curl gives
+	Result:
+		No issues with any get request.
+
+	Condition:
+		Sent GET to server.py
+	Result:
+		No issue.
+
+	Condition:
+		PUT to local Apache web server, www.uml.edu, and an existing file 
+		in working directory of server.py. Using client.py and curl 
+			(curl -X put '<data>' <host>:<port>)
+	Result:
+		Results differ massively. For both curl and client.py
+		but they are all erroneous responses.
+
+	Condition:
+		Use client.py in a different working directory to send a file to
+		the server. Since server.py checks if the file exists relative to
+		its working directory, you have to run the client in another 
+		directory.
+	Result:
+		The file was copied over into server.py's working directory. 
+
+	Condition:
+		Send a large file to the server. I sent a 47 KB length pdf
+	Result:
+		The pdf was sent  to the server, but the client crashed with 
+		errno 104
+
+		
+
