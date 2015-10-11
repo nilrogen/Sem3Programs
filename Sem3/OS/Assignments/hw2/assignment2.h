@@ -31,15 +31,6 @@
 
 #define gettid() SYSCALL(SYS_gettid)
 
-typedef struct mg_eventcounter mevt_t;
-typedef struct mg_sequencer mseq_t;
-
-extern int evtc_init(mevt_t *);
-extern void await(mevt_t *, uint);
-extern void signal(mevt_t *);
-
-extern uint seq_init(mseq_t *);
-extern uint ticket(mseq_t *);
 
 
 #endif
