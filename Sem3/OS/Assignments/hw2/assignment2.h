@@ -29,6 +29,12 @@
 #define uint unsigned int
 #define bool int
 
+#define D_TYPES 4
+#define D_SIZE 50
+
+#define N_CONSUMERS 50
+#define N_PRODUCERS 20
+
 #define gettid() SYSCALL(SYS_gettid)
 
 

@@ -5,10 +5,6 @@
 
 
 extern int evtc_init(mevt_t *val) {
-	// TODO: Remove eventually 
-	if (val->initialized == TRUE) {
-		assert(0 == 1);
-	}
 
 	val->counter = 0; 
 	val->owner_tid = (pid_t) 0; 
@@ -17,6 +13,15 @@ extern int evtc_init(mevt_t *val) {
 	pthread_cond_init(&val->cond, NULL);
 	val->initialized = TRUE;
 
+	return 0;
+}
+
+/**
+ * This is a simplification of manually setting the val
+ * by calling signal val times.
+ */
+extern int set_counter(mevt_t *evtc, uint val) {
+	etvc->counter = val;
 	return 0;
 }
 
