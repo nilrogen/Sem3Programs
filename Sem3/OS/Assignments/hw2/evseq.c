@@ -1,6 +1,7 @@
 /**
  * Author: Michael Gorlin
  */
+ #include "assignment2.h"
  #include "evseq.h"
 
 
@@ -11,7 +12,6 @@ extern int evtc_init(mevt_t *val) {
 	pthread_mutex_init(&val->innerMutex, NULL);
 	pthread_mutex_init(&val->outerMutex, NULL);
 	pthread_cond_init(&val->cond, NULL);
-	val->initialized = TRUE;
 
 	return 0;
 }
@@ -21,7 +21,7 @@ extern int evtc_init(mevt_t *val) {
  * by calling signal val times.
  */
 extern int set_counter(mevt_t *evtc, uint val) {
-	etvc->counter = val;
+	evtc->counter = val;
 	return 0;
 }
 
@@ -31,7 +31,7 @@ extern int set_counter(mevt_t *evtc, uint val) {
  */
 extern void mg_await(mevt_t *val, uint ticket) {
 	pthread_mutex_lock(&val->innerMutex);
-	while (val->counter <= ticket) {
+	while (val->counter < ticket) {
 		pthread_cond_wait(&val->cond, &val->innerMutex);
 	}
 	pthread_mutex_unlock(&val->innerMutex);
@@ -44,14 +44,8 @@ extern void mg_signal(mevt_t *val) {
 }
 
 extern uint seq_init(mseq_t *val) {
-	// TODO: Remove eventually 
-	if (val->initialized == TRUE) {
-		assert(0 == 1);
-	}
-
 	val->counter = 0; 
 	pthread_mutex_init(&val->mutex, NULL);
-	val->initialized = TRUE;
 
 	return 0;
 }

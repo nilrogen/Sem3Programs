@@ -1,5 +1,7 @@
 #ifndef __evseq_H
 #define __evseq_H
+
+#include "assignment2.h"
 	
 typedef struct mg_eventcounter {
 	uint counter;
@@ -9,9 +11,9 @@ typedef struct mg_eventcounter {
 	pthread_mutex_t outerMutex;
 } mevt_t;
 
+
 typedef struct mg_sequencer {
 	uint counter;
-	bool initialized;
 	pthread_mutex_t mutex;
 } mseq_t;
 

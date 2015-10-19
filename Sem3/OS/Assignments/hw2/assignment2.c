@@ -1,17 +1,18 @@
 #include "assignment2.h"
 #include "evseq.h"
 
-static mevt_t pec, cec;
-static mseq_t seq;
-
 static pthread_t thread_id[N_CONSUMERS + N_PRODUCERS];
 
-struct donut_ring {
+static struct donut_ring {
 	uint flavor[D_TYPES][D_SIZE];
 	int	outptr[D_TYPES];
+	// Producer Mutex types
 	mseq_t p_seq[D_TYPES];
+	mseq_t c_seq[D_TYPES];
+	mseq_t mut_seq[D_TYPES];
 	mevt_t p_evt[D_TYPES];
-
+	mevt_t c_evt[D_TYPES];
+	mevt_t mut_evt[D_TYPES];
 	// TODO Do I need this int	serial[D_TYPES];
 } *ring;
 
@@ -21,14 +22,24 @@ void *consumer(void *);
 void across_cpu(void);
 void on_core(void);
 
-void init_seed(ushort **xsub) {
+void init_seed(ushort (*xsub)[3]) {
 	struct timeval randtime; 
 
 	gettimeofday (&randtime, (struct timezone *) 0);
-	xsub[0] = (unsigned short) randtime.tv_usec;
-	xsub[1] = (unsigned short) (randtime.tv_usec >> 16);
-	xsub[2] = (unsigned short) (pthread_self());
+	*xsub[0] = (unsigned short) randtime.tv_usec;
+	*xsub[1] = (unsigned short) (randtime.tv_usec >> 16);
+	*xsub[2] = (unsigned short) (pthread_self());
 }
+
+inline void lock(uint donut) {
+	mg_await(&ring->mut_evt[donut], ticket(&ring->mut_seq[donut]));
+}
+
+inline void unlock(uint donut) {
+	mg_signal(&ring->mut_evt[donut]);
+}
+
+
 	
 
 int main(int argc, char *argv[]) {
@@ -37,7 +48,7 @@ int main(int argc, char *argv[]) {
 	int arg_array[N_CONSUMERS];
 
 
-	if ((ring == (struct donut_ring *) calloc(sizeof(struct donut_ring), 1)) != NULL) {
+	if ((ring = (struct donut_ring *) calloc(sizeof(struct donut_ring), 1)) == NULL) {
 		printf("Failed to create space for ring buffer.\n");
 		exit(1);
 	}
@@ -47,48 +58,56 @@ int main(int argc, char *argv[]) {
 		evtc_init(&ring->p_evt[i]);
 		set_counter(&ring->p_evt[i], D_SIZE);
 		seq_init(&ring->p_seq[i]);
+
+		evtc_init(&ring->c_evt[i]);
+		seq_init(&ring->c_seq[i]);
+		ticket(&ring->c_seq[i]);
 		
+		evtc_init(&ring->mut_evt[i]);
+		seq_init(&ring->mut_seq[i]);
 	}
 
 
 
 	printf("0->>>STUFF\n");
 
-
-	evtc_init(&pec);
-	seq_init(&seq);
-
-	evtc_init(&cec);
-
-	if ((tid[0] = pthread_create(&tid[0], NULL, prod, NULL)) != 0) {
+	if ((thread_id[0] = pthread_create(&thread_id[0], NULL, producer, NULL)) != 0) {
 		perror("FUCK");
 	}
-	if ((tid[1] = pthread_create(&tid[1], NULL, cons, NULL)) != 0) {
+	if ((thread_id[1] = pthread_create(&thread_id[1], NULL, consumer, NULL)) != 0) {
 		perror("FUCK");
 	}
 
 	printf("0->>>STUFF DONE\n");
 
-	pthread_join(tid[1], NULL);
+	consumer(NULL);
+
+
 
 	printf("0->>>STUFF FINISHED\n");
 	return 0;
 }
 
-void *prod(void *arg) {
+void *producer(void *arg) {
 	uint donut;
 	uint tick;
 	ushort xsub[3];
 
 	init_seed(&xsub);
 
+	printf("Producer Running!\n");
+
 	while (1) {
 		donut = nrand48(xsub) % D_TYPES;
 		tick = ticket(&ring->p_seq[donut]);
-
 		mg_await(&ring->p_evt[donut], tick);
 		// CS
+
+		lock(donut);
+
 		ring->flavor[donut][tick % D_TYPES] = tick;
+
+		unlock(donut);
 
 		mg_signal(&ring->p_evt[donut]); 
 		mg_signal(&ring->c_evt[donut]);
@@ -96,13 +115,31 @@ void *prod(void *arg) {
 	return NULL;
 }
 
-void *cons(void *arg) {
+void *consumer(void *arg) {
 	int i;
+	uint donut, tick;
+
+	ushort xsub[3];
+
+	init_seed(&xsub);
+
+	printf("Consumer Running!\n");
+
 	for (i = 0; i < 20; i++) {
-		printf("GOT A DONUT\n");
-		mg_await(&cec, ring.out+1);
-		ring.out++;
-		mg_signal(&pec);
+		donut = nrand48(xsub) % D_TYPES;
+
+		tick = ticket(&ring->c_seq[donut]);
+		mg_await(&ring->c_evt[donut], tick);
+
+		// CS
+		lock(donut);
+
+		printf("Got Donut %d\n", ring->flavor[donut][((int)tick-1) % D_SIZE]);
+
+		unlock(donut);
+
+		mg_signal(&ring->p_evt[donut]); 
+		mg_signal(&ring->c_evt[donut]);
 	}
 
 	return NULL;
