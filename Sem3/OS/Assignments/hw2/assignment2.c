@@ -1,7 +1,7 @@
 #include "assignment2.h"
 #include "evseq.h"
 
-static pthread_t thread_id[N_CONSUMERS + N_PRODUCERS];
+static pthread_t thread_id[N_THREADS];
 
 static struct donut_ring {
 	uint flavor[D_TYPES][D_SIZE];
@@ -38,8 +38,6 @@ inline void lock(uint donut) {
 inline void unlock(uint donut) {
 	mg_signal(&ring->mut_evt[donut]);
 }
-
-
 	
 
 int main(int argc, char *argv[]) {
@@ -56,31 +54,45 @@ int main(int argc, char *argv[]) {
 	for (i = 0; i < D_TYPES; i++) {
 		// Set Producer event counter to counter 50
 		evtc_init(&ring->p_evt[i]);
-		set_counter(&ring->p_evt[i], D_SIZE);
+		set_counter(&ring->p_evt[i], D_SIZE-1);
 		seq_init(&ring->p_seq[i]);
 
 		evtc_init(&ring->c_evt[i]);
 		seq_init(&ring->c_seq[i]);
 		ticket(&ring->c_seq[i]);
 		
+		/** THIS IS NOT NEEDED !
 		evtc_init(&ring->mut_evt[i]);
 		seq_init(&ring->mut_seq[i]);
+		*/
 	}
 
 
 
 	printf("0->>>STUFF\n");
 
-	if ((thread_id[0] = pthread_create(&thread_id[0], NULL, producer, NULL)) != 0) {
-		perror("FUCK");
-	}
-	if ((thread_id[1] = pthread_create(&thread_id[1], NULL, consumer, NULL)) != 0) {
-		perror("FUCK");
+	for (i = 0; i < N_PRODUCERS; i++) {
+		if(pthread_create(&thread_id[i], NULL, producer, NULL) != 0) {
+			printf("Failed to create thread!\n");
+			return 1;
+		}
 	}
 
-	printf("0->>>STUFF DONE\n");
-
-	consumer(NULL);
+	for (i = N_PRODUCERS; i < N_THREADS; i++) {
+		arg_array[i - N_PRODUCERS] = i - N_PRODUCERS + 1;
+		if(pthread_create(&thread_id[i], NULL, consumer, 
+						 (void *) &arg_array[i - N_PRODUCERS]) != 0) {
+			printf("Failed to create thread!\n");
+			return 1;
+		}
+	}
+	
+	printf("0->>>THREADS MADE\n");
+	
+	for (i = N_PRODUCERS; i < N_THREADS; i++) {
+		pthread_join(thread_id[i], NULL);
+		printf("*");
+	}
 
 
 
@@ -92,10 +104,15 @@ void *producer(void *arg) {
 	uint donut;
 	uint tick;
 	ushort xsub[3];
+	char fname[20];
+	FILE *out;
+	
+
+
 
 	init_seed(&xsub);
 
-	printf("Producer Running!\n");
+	printf("Producer %d Running!\n", gettid());
 
 	while (1) {
 		donut = nrand48(xsub) % D_TYPES;
@@ -103,13 +120,8 @@ void *producer(void *arg) {
 		mg_await(&ring->p_evt[donut], tick);
 		// CS
 
-		lock(donut);
+		ring->flavor[donut][tick % D_SIZE] = tick;
 
-		ring->flavor[donut][tick % D_TYPES] = tick;
-
-		unlock(donut);
-
-		mg_signal(&ring->p_evt[donut]); 
 		mg_signal(&ring->c_evt[donut]);
 	}
 	return NULL;
@@ -117,13 +129,18 @@ void *producer(void *arg) {
 
 void *consumer(void *arg) {
 	int i;
+	int val = *((int *)arg);
+	char n[20];
 	uint donut, tick;
+	FILE *out;
 
 	ushort xsub[3];
 
 	init_seed(&xsub);
+	sprintf(n, "crap/f%d", val);
+	out = fopen(n, "w");
 
-	printf("Consumer Running!\n");
+
 
 	for (i = 0; i < 20; i++) {
 		donut = nrand48(xsub) % D_TYPES;
@@ -132,15 +149,14 @@ void *consumer(void *arg) {
 		mg_await(&ring->c_evt[donut], tick);
 
 		// CS
-		lock(donut);
 
-		printf("Got Donut %d\n", ring->flavor[donut][((int)tick-1) % D_SIZE]);
-
-		unlock(donut);
+		fprintf(out,"%d %d\n", donut, ring->flavor[donut][((int)tick-1) % D_SIZE]);
+		
 
 		mg_signal(&ring->p_evt[donut]); 
-		mg_signal(&ring->c_evt[donut]);
+		usleep(1000);
 	}
+	printf(" %d", val);
 
 	return NULL;
 }

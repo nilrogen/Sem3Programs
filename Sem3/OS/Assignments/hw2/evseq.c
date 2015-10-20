@@ -9,8 +9,7 @@ extern int evtc_init(mevt_t *val) {
 
 	val->counter = 0; 
 	val->owner_tid = (pid_t) 0; 
-	pthread_mutex_init(&val->innerMutex, NULL);
-	pthread_mutex_init(&val->outerMutex, NULL);
+	pthread_mutex_init(&val->mutex, NULL);
 	pthread_cond_init(&val->cond, NULL);
 
 	return 0;
@@ -30,11 +29,11 @@ extern int set_counter(mevt_t *evtc, uint val) {
  * you dont block, otherwise you do block.
  */
 extern void mg_await(mevt_t *val, uint ticket) {
-	pthread_mutex_lock(&val->innerMutex);
+	pthread_mutex_lock(&val->mutex);
 	while (val->counter < ticket) {
-		pthread_cond_wait(&val->cond, &val->innerMutex);
+		pthread_cond_wait(&val->cond, &val->mutex);
 	}
-	pthread_mutex_unlock(&val->innerMutex);
+	pthread_mutex_unlock(&val->mutex);
 }
 
 extern void mg_signal(mevt_t *val) {

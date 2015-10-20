@@ -33,10 +33,11 @@
 #define D_SIZE 50
 
 #define N_CONSUMERS 50
-#define N_PRODUCERS 20
+#define N_PRODUCERS 40
+#define N_THREADS (N_CONSUMERS+N_PRODUCERS)
 
-#define gettid() SYSCALL(SYS_gettid)
+#define N_CONS_TRIAL 20
 
-
+#define gettid() syscall(SYS_gettid)
 
 #endif
