@@ -3,7 +3,7 @@ import sys
 def test(v):
     t1 = len(v) * (len(v)-1) / 2
     t2 = sum(v)
-    print t1, ' ', t2, ' ', t1==t2, len(v)
+    print t1, ' ', t2, ' ', t1==t2
 
     return t1, t2
 
@@ -12,7 +12,7 @@ if __name__ == '__main__':
     old = {}
 
     nc = 50
-    print 'Testing Consumers -------'
+    print '\nTesting Consumers -----'
     for i in range(nc):
         f = open('crap/c'+str(i+1), 'r')
         for val in f:
@@ -28,8 +28,6 @@ if __name__ == '__main__':
         f.close()
 
 
-    ls = sum(len(d[i]) for i in range(4))
-    print ls
     print 'Actual  Test'
     print 'Length  Length  Equal?'
     print '----------------------'

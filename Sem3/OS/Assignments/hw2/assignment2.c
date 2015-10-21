@@ -1,5 +1,7 @@
 #include "assignment2.h"
 #include "evseq.h"
+	
+#define CPU_CK_COUNT 24
 
 static int state; 
 static pthread_t thread_id[N_THREADS];
@@ -29,14 +31,12 @@ void init_seed(ushort (*xsub)[3]) {
 	*xsub[2] = (unsigned short) (pthread_self());
 }
 
-void across_cpu() {
+void cpu_scope() {
 	int proc_cnt=0, i;
 	cpu_set_t mask;	
 	ushort xsub[3];
 
 	init_seed(&xsub);
-
-	#define CPU_CK_COUNT 24
 
 	sched_getaffinity(getpid(), sizeof(cpu_set_t), &mask);
 
@@ -56,7 +56,24 @@ void across_cpu() {
 	sched_setaffinity(0, sizeof(cpu_set_t), &mask);
 
 }
-void on_core(cpu_set_t *);
+void thread_scope() {
+	int proc_cnt = 0, i;
+	cpu_set_t mask;	
+	ushort xsub[3];
+
+	init_seed(&xsub);
+
+	sched_getaffinity(gettid(), sizeof(cpu_set_t), &mask);
+
+	for (i = 0; i < CPU_CK_COUNT; i++) {
+		proc_cnt += (CPU_ISSET(i, &mask)) ? 1 : 0;
+	}
+
+	CPU_ZERO(&mask);
+	CPU_SET(nrand48(xsub) % proc_cnt, &mask);
+
+	sched_setaffinity(0, sizeof(cpu_set_t), &mask);
+}
 /*
 inline void lock(uint donut) {
 	mg_await(&ring->mut_evt[donut], ticket(&ring->mut_seq[donut]));
@@ -82,9 +99,6 @@ int main(int argc, char *argv[]) {
 	int con_args[N_CONSUMERS];
 	int pro_args[N_PRODUCERS];
 
-	// The program defaults to processor scope
-	cpu_set_t mask;
-
 	state = 0;
 	// If the program run was threadscope change state.
 	if (strcmp(argv[0]+2, "threadscope") == 0) {
@@ -92,7 +106,7 @@ int main(int argc, char *argv[]) {
 
 	}
 	else {
-		across_cpu();
+		cpu_scope();
 	}
 
 
@@ -154,10 +168,13 @@ int main(int argc, char *argv[]) {
 }
 
 void *producer(void *arg) {
-	int val = *((int *) arg);
+	//int val = *((int *) arg);
 	uint donut;
 	uint tick;
 	ushort xsub[3];
+
+	if (state)
+		thread_scope();
 
 	init_seed(&xsub);
 
@@ -186,6 +203,9 @@ void *consumer(void *arg) {
 
 	ushort xsub[3];
 
+	if (state)
+		thread_scope();
+
 	init_seed(&xsub);
 	sprintf(n, "crap/c%d", val);
 	out = fopen(n, "w");
@@ -205,9 +225,9 @@ void *consumer(void *arg) {
 		unlock_output();
 		
 
-		lock_output();
+		//lock_output();
 		mg_signal(&ring->p_evt[donut]); 
-		unlock_output();
+		//unlock_output();
 		usleep(1000);
 	}
 	printf(" %d", val);
