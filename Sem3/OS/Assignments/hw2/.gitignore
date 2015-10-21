@@ -2,3 +2,5 @@ crap/*
 *.swp
 *.o
 test
+procscope
+threadscope
