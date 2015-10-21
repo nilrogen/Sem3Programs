@@ -1,7 +1,11 @@
 #include "assignment2.h"
 #include "evseq.h"
 
+static int state; 
 static pthread_t thread_id[N_THREADS];
+
+static mseq_t output_seq;
+static mevt_t output_evt;
 
 static struct donut_ring {
 	uint flavor[D_TYPES][D_SIZE];
@@ -16,8 +20,6 @@ static struct donut_ring {
 void *producer(void *);
 void *consumer(void *);
 
-void across_cpu(void);
-void on_core(void);
 
 void init_seed(ushort (*xsub)[3]) {
 	struct timeval randtime; 
@@ -28,6 +30,34 @@ void init_seed(ushort (*xsub)[3]) {
 	*xsub[2] = (unsigned short) (pthread_self());
 }
 
+void across_cpu() {
+	int proc_cnt=0, i;
+	cpu_set_t mask;	
+	ushort xsub[3];
+
+	init_seed(&xsub);
+
+	#define CPU_CK_COUNT 24
+
+	sched_getaffinity(getpid(), sizeof(cpu_set_t), &mask);
+
+	for (i = 0; i < CPU_CK_COUNT; i++) {
+		proc_cnt += (CPU_ISSET(i, &mask)) ? 1 : 0;
+	}
+
+	CPU_ZERO(&mask);
+	CPU_SET(nrand48(xsub) % proc_cnt, &mask);
+
+	printf("AFFINITY SET TO: on %d Cores\n", proc_cnt);
+	for (i = 0; i < proc_cnt; i++) {
+		printf("%d ", (CPU_ISSET(i, &mask)) ? 1 : 0);
+	}
+	printf("\n");
+
+	sched_setaffinity(0, sizeof(cpu_set_t), &mask);
+
+}
+void on_core(cpu_set_t *);
 /*
 inline void lock(uint donut) {
 	mg_await(&ring->mut_evt[donut], ticket(&ring->mut_seq[donut]));
@@ -37,6 +67,14 @@ inline void unlock(uint donut) {
 	mg_signal(&ring->mut_evt[donut]);
 }
 */
+
+inline void lock_output() {
+	mg_await(&output_evt, ticket(&output_seq));
+}
+
+inline void unlock_output() {
+	mg_signal(&output_evt);
+}
 	
 
 int main(int argc, char *argv[]) {
@@ -46,16 +84,17 @@ int main(int argc, char *argv[]) {
 	int pro_args[N_PRODUCERS];
 
 	// The program defaults to processor scope
-	int state;
-	pthread_attr_t tattr; 
-	struct sched_param sscheme;
+	cpu_set_t mask;
 
 	state = 0;
 	// If the program run was threadscope change state.
 	if (strcmp(argv[0]+2, "threadscope") == 0) {
 		state = 1;
+
 	}
-		
+	else {
+		across_cpu();
+	}
 
 
 	if ((ring = (struct donut_ring *) calloc(sizeof(struct donut_ring), 1)) == NULL) {
@@ -76,6 +115,8 @@ int main(int argc, char *argv[]) {
 		   so first ticket is consumed. */
 		ticket(&ring->c_seq[i]);
 	}
+	evtc_init(&output_evt);
+	seq_init(&output_seq);
 
 
 
@@ -98,7 +139,9 @@ int main(int argc, char *argv[]) {
 		}
 	}
 	
+	lock_output();
 	printf("---- THREADS CREATED  ----\n");
+	unlock_output();
 	
 	for (i = N_PRODUCERS; i < N_THREADS; i++) {
 		pthread_join(thread_id[i], NULL);
@@ -158,7 +201,9 @@ void *consumer(void *arg) {
 
 		rec = ring->flavor[donut][(((int) tick) - 1) % D_SIZE];
 
+		lock_output();
 		fprintf(out,"%d %d %d\n", donut, rec, (tick-1) % D_SIZE);
+		unlock_output();
 		
 
 		mg_signal(&ring->p_evt[donut]); 
