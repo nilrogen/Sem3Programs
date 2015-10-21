@@ -3,14 +3,15 @@ import sys
 def test(v):
     t1 = len(v) * (len(v)-1) / 2
     t2 = sum(v)
-    print t1, ' ', t2, ' ', t1==t2
+    print t1, ' ', t2, ' ', t1==t2, len(v)
+
+    return t1, t2
 
 if __name__ == '__main__':
     d = [[],[],[],[]]
     old = {}
 
     nc = 50
-
     print 'Testing Consumers -------'
     for i in range(nc):
         f = open('crap/c'+str(i+1), 'r')
@@ -27,12 +28,17 @@ if __name__ == '__main__':
         f.close()
 
 
-    print ''
+    ls = sum(len(d[i]) for i in range(4))
+    print ls
     print 'Actual  Test'
     print 'Length  Length  Equal?'
     print '----------------------'
 
-    test(d[0]) 
-    test(d[1]) 
-    test(d[2])
-    test(d[3])
+    v1, v2 = 0, 0
+    for i in range(4):
+        t1, t2 = test(d[i]) 
+        v1 += t1
+        v2 += t2
+
+    print '\nTotal   Total\n--------------'
+    print '%d   %d' % (v1, v2)

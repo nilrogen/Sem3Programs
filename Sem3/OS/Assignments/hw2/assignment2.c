@@ -9,7 +9,6 @@ static mevt_t output_evt;
 
 static struct donut_ring {
 	uint flavor[D_TYPES][D_SIZE];
-	int	outptr[D_TYPES];
 	// Producer Mutex types
 	mseq_t p_seq[D_TYPES];
 	mseq_t c_seq[D_TYPES];
@@ -145,10 +144,10 @@ int main(int argc, char *argv[]) {
 	
 	for (i = N_PRODUCERS; i < N_THREADS; i++) {
 		pthread_join(thread_id[i], NULL);
+		lock_output();
 		printf("*");
+		unlock_output();
 	}
-
-
 
 	printf("---- PROGRAM FINISHED ----\n");
 	return 0;
@@ -206,10 +205,11 @@ void *consumer(void *arg) {
 		unlock_output();
 		
 
+		lock_output();
 		mg_signal(&ring->p_evt[donut]); 
+		unlock_output();
 		usleep(1000);
 	}
 	printf(" %d", val);
-
 	return NULL;
 }
