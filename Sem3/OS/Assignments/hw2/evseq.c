@@ -19,9 +19,13 @@ static inline int mutex_unlock(pthread_mutex_t *mutex) {
 }
 
 extern int evtc_init(mevt_t *val) {
+	static int snum = 0;
 	val->counter = 0; 
-	pthread_mutex_init(&val->mutex, NULL);
-	pthread_cond_init(&val->cond, NULL);
+	val->nv = snum++;
+	val->mutex = (pthread_mutex_t *) malloc(sizeof(pthread_mutex_t));
+	val->cond = (pthread_cond_t *) malloc(sizeof(pthread_cond_t));
+	pthread_mutex_init(val->mutex, NULL);
+	pthread_cond_init(val->cond, NULL);
 
 	return 0;
 }
@@ -32,6 +36,8 @@ extern int evtc_init(mevt_t *val) {
  */
 extern int set_counter(mevt_t *evtc, uint val) {
 	evtc->counter = val;
+	printf("Evc %d counter: %d\n", evtc->nv, evtc->counter);
+
 	return 0;
 }
 
@@ -40,22 +46,23 @@ extern int set_counter(mevt_t *evtc, uint val) {
  * then do not block, otherwise block.
  */
 extern void mg_await(mevt_t *val, uint ticket) {
-	mutex_lock(&val->mutex);
-	while (val->counter < ticket) {
-		pthread_cond_wait(&val->cond, &val->mutex);
+	mutex_lock(val->mutex);
+	while (ticket > val->counter) {
+		pthread_cond_wait(val->cond, val->mutex);
 	}
-	mutex_unlock(&val->mutex);
-	pthread_cond_broadcast(&val->cond);
+	mutex_unlock(val->mutex);
+	pthread_cond_broadcast(val->cond);
 }
 
 extern void mg_signal(mevt_t *val) {
 	val->counter += 1;
-	pthread_cond_broadcast(&val->cond);
+	pthread_cond_broadcast(val->cond);
 }
 
 extern uint seq_init(mseq_t *val) {
 	val->counter = 0; 
-	pthread_mutex_init(&val->mutex, NULL);
+	val->mutex = (pthread_mutex_t *) malloc(sizeof(pthread_mutex_t));
+	pthread_mutex_init(val->mutex, NULL);
 
 	return 0;
 }
@@ -63,13 +70,14 @@ extern uint seq_init(mseq_t *val) {
 extern uint ticket(mseq_t *val) {
 	uint retv;
 
-	mutex_lock(&val->mutex);
+	mutex_lock(val->mutex);
 
 	// CS Start
 	retv = val->counter++;
+	assert(retv == val->counter-1);
 	// CS End
 
-	mutex_unlock(&val->mutex);
+	mutex_unlock(val->mutex);
 
 	return retv;
 }

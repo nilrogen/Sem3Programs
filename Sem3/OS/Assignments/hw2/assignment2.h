@@ -26,17 +26,17 @@
 # define FALSE 0 
 #endif
 
-#define uint  unsigned int
+#define uint  int
 #define bool int
 
 #define D_TYPES 4
-#define D_SIZE 50
+#define D_SIZE 250
 
 #define N_CONSUMERS 50
-#define N_PRODUCERS 40
+#define N_PRODUCERS 30
 #define N_THREADS (N_CONSUMERS+N_PRODUCERS)
 
-#define N_CONS_TRIAL 20
+#define N_CONS_TRIAL (200* 12)
 
 #define gettid() syscall(SYS_gettid)
 

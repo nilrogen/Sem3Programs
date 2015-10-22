@@ -1,4 +1,5 @@
 crap/*
+timingoutput/*
 *.swp
 *.o
 test

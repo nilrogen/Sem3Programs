@@ -1,5 +1,5 @@
 Michael Gorlin
-Degree of Success: 95%
+Degree of Success: 80%
 91.515 Assignment 2
 
 
@@ -23,11 +23,33 @@ a "normal" function for event counters, they are a simplification of
 calling signal 'n' times. 
 
 
-I have really one issue with my program, sometimes (maybe <5% of the time) it
+I have a few issues with my program. Sometimes (maybe <5% of the time) it
 fails for seemingly no reason. It seems like sometimes ticket doesn't return
 what it should. Maybe there is a memory address issue; an issue with file
 output; a problem with my test program; an issue with my implementation;
 or some issue that is out of my control. It's very weird whatever the reason
 is, and I don't have the time to figure whatever this bug is. 
+
+My other issue is that I'm not entirely sure that It works correctly. I am
+unable to identfy where I have a mistake, but my program seems to work most
+of the time for 'procscope' and less so for 'threadscope'. Primarily the
+'threadscope' program runs about the same speed as the 'procscope' program.
+Based on the output from Bill's tests in class it seems that 'threadscope'
+should be on the order of ~2x slower then 'procscope'.
+
+The timing data comes from executions on mercury. The running parameters
+were 30 producers, 50 consumers, 120 donuts consumed, 100 buffer size,
+4 types. Processor scope ran with an average time of ~.4249 seconds.
+Thread scope ran with an average time of ~.5346 seconds. The timing files
+can be found in the timingoutput/ directory. The results lead me to think 
+that there is an issue with my implementation. As stated above I feel the
+program run on 1 core should be faster then among all the cores.
+
+
+
+
+
+
+
 
 

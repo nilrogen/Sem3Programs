@@ -6,16 +6,15 @@
 static int state; 
 static pthread_t thread_id[N_THREADS];
 
-static mseq_t output_seq;
-static mevt_t output_evt;
-
+static uint flavor[D_TYPES][D_SIZE];
 static struct donut_ring {
-	uint flavor[D_TYPES][D_SIZE];
 	// Producer Mutex types
 	mseq_t p_seq[D_TYPES];
 	mseq_t c_seq[D_TYPES];
+	mseq_t m_seq[D_TYPES];
 	mevt_t p_evt[D_TYPES];
 	mevt_t c_evt[D_TYPES];
+	mevt_t m_evt[D_TYPES];
 } *ring;
 
 void *producer(void *);
@@ -28,7 +27,7 @@ void init_seed(ushort (*xsub)[3]) {
 	gettimeofday (&randtime, (struct timezone *) 0);
 	*xsub[0] = (unsigned short) randtime.tv_usec;
 	*xsub[1] = (unsigned short) (randtime.tv_usec >> 16);
-	*xsub[2] = (unsigned short) (pthread_self());
+	*xsub[2] = (unsigned short) (gettid());
 }
 
 void cpu_scope() {
@@ -56,7 +55,7 @@ void cpu_scope() {
 	sched_setaffinity(0, sizeof(cpu_set_t), &mask);
 
 }
-void thread_scope() {
+void thread_scope(int val) {
 	int proc_cnt = 0, i;
 	cpu_set_t mask;	
 	ushort xsub[3];
@@ -70,25 +69,34 @@ void thread_scope() {
 	}
 
 	CPU_ZERO(&mask);
-	CPU_SET(nrand48(xsub) % proc_cnt, &mask);
+	i = nrand48(xsub) % proc_cnt;
+	CPU_SET(i, &mask);
+	printf("%d ", i);
 
 	sched_setaffinity(0, sizeof(cpu_set_t), &mask);
 }
 
-inline void lock_output() {
-	mg_await(&output_evt, ticket(&output_seq));
+inline void lock(int donut) {
+	mg_await(&ring->m_evt[donut], ticket(&ring->m_seq[donut]));
 }
 
-inline void unlock_output() {
-	mg_signal(&output_evt);
+inline void unlock(int donut) {
+	mg_signal(&ring->m_evt[donut]);
 }
 	
 
 int main(int argc, char *argv[]) {
-	int i;
+	int i, j, timing;
 	//struct timeval first_time, last_time;
 	int con_args[N_CONSUMERS];
 	int pro_args[N_PRODUCERS];
+	FILE *fout;
+	struct timeval startt, endt; 
+
+	gettimeofday(&startt, (struct timezone *) 0);
+
+
+	fout = fopen("timing", "a");
 
 	state = 0;
 	// If the program run was threadscope change state.
@@ -100,6 +108,12 @@ int main(int argc, char *argv[]) {
 		cpu_scope();
 	}
 
+	if (argc > 1 && strcmp(argv[1], "-v") == 0) { 
+		timing = 1;
+	}
+	else {
+		timing = 0;
+	}
 
 	if ((ring = (struct donut_ring *) calloc(sizeof(struct donut_ring), 1)) == NULL) {
 		printf("Failed to create space for ring buffer.\n");
@@ -118,10 +132,10 @@ int main(int argc, char *argv[]) {
 		/* Consumer threads need to block if no donuts are created
 		   so first ticket is consumed. */
 		ticket(&ring->c_seq[i]);
-	}
-	evtc_init(&output_evt);
-	seq_init(&output_seq);
 
+		evtc_init(&ring->m_evt[i]);
+		seq_init(&ring->m_seq[i]);
+	}
 
 
 	printf("---- CREATING THREADS ----\n");
@@ -143,29 +157,45 @@ int main(int argc, char *argv[]) {
 		}
 	}
 	
-	lock_output();
 	printf("---- THREADS CREATED  ----\n");
-	unlock_output();
 	
 	for (i = N_PRODUCERS; i < N_THREADS; i++) {
 		pthread_join(thread_id[i], NULL);
-		lock_output();
 		printf("*");
-		unlock_output();
 	}
 
 	printf("---- PROGRAM FINISHED ----\n");
+
+
+	if (timing) {
+		gettimeofday(&endt, (struct timezone *) 0);
+		if ((i = endt.tv_sec - startt.tv_sec) == 0) {
+			j = endt.tv_usec - startt.tv_usec;
+		}	
+		else {
+			if (endt.tv_usec - startt.tv_usec < 0) {
+				i--;
+				j = 1000000 + (endt.tv_usec - startt.tv_usec);
+			}
+			else {
+				j = endt.tv_usec - startt.tv_usec;
+			}
+		}
+		fprintf(fout, "%d.%d\n", i, j);
+	}
+	fclose(fout);
 	return 0;
 }
 
 void *producer(void *arg) {
-	//int val = *((int *) arg);
+	int val = *((int *) arg);
 	uint donut;
 	uint tick;
 	ushort xsub[3];
 
-	if (state)
-		thread_scope();
+	if (state) {
+		thread_scope(val);
+	}
 
 	init_seed(&xsub);
 
@@ -176,8 +206,9 @@ void *producer(void *arg) {
 		tick = ticket(&ring->p_seq[donut]);
 		mg_await(&ring->p_evt[donut], tick);
 		// CS
-
-		ring->flavor[donut][tick % D_SIZE] = tick;
+		//lock(donut);
+		flavor[donut][tick % D_SIZE] = tick;
+		//unlock(donut);
 
 		mg_signal(&ring->c_evt[donut]);
 	}
@@ -194,8 +225,9 @@ void *consumer(void *arg) {
 
 	ushort xsub[3];
 
-	if (state)
-		thread_scope();
+	if (state) {
+		thread_scope(val);
+	}
 
 	init_seed(&xsub);
 	sprintf(n, "crap/c%d", val);
@@ -207,16 +239,13 @@ void *consumer(void *arg) {
 
 		tick = ticket(&ring->c_seq[donut]);
 		mg_await(&ring->c_evt[donut], tick);
-
 		// CS
-
-		rec = ring->flavor[donut][(((int) tick) - 1) % D_SIZE];
-
+		//lock(donut);
+		rec = flavor[donut][(((int) tick) - 1) % D_SIZE];
+		//unlock(donut);
 		mg_signal(&ring->p_evt[donut]); 
 
-		lock_output();
-		fprintf(out,"%d %d\n", donut, rec);
-		unlock_output();
+		fprintf(out, "%d %d\n", donut, rec);
 		
 		usleep(1000);
 	}
