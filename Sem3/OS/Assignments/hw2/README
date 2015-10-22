@@ -1,0 +1,33 @@
+Michael Gorlin
+Degree of Success: 95%
+91.515 Assignment 2
+
+
+My program implements event counters and sequencers using pthread mutex 
+primitives. My program was tested on both on mercury and on a Ubuntu Linux
+virtual machine with 2 CPU cores and 384 MB of RAM. 
+
+The Program can be run using either 'procscope' or 'threadscope'. 'procscope'
+schedules the threads on a single random core, whereas 'threadscope' schedules
+each thread to a random core. The professor provided shell script has been
+modified to default to use 'procscope', with a second input argument to
+change the scope (run with the argument threadscope)
+
+My design for the mutex primitives was the first implemented feature. Event
+counters are implemented in such a way that the thread that calls mg_await
+does not have to call mg_signal somewhere after in execution. This was odd
+to me at first but is ultimately correct. Partial ordering for event counters
+works in theory, but I'm not sure if the way I implemented it is the best.
+I've added a function set_counter for event counters. While formally not
+a "normal" function for event counters, they are a simplification of 
+calling signal 'n' times. 
+
+
+I have really one issue with my program, sometimes (maybe <5% of the time) it
+fails for seemingly no reason. It seems like sometimes ticket doesn't return
+what it should. Maybe there is a memory address issue; an issue with file
+output; a problem with my test program; an issue with my implementation;
+or some issue that is out of my control. It's very weird whatever the reason
+is, and I don't have the time to figure whatever this bug is. 
+
+

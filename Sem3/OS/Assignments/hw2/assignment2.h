@@ -26,7 +26,7 @@
 # define FALSE 0 
 #endif
 
-#define uint  int
+#define uint  unsigned int
 #define bool int
 
 #define D_TYPES 4

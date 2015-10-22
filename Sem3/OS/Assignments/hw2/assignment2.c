@@ -74,15 +74,6 @@ void thread_scope() {
 
 	sched_setaffinity(0, sizeof(cpu_set_t), &mask);
 }
-/*
-inline void lock(uint donut) {
-	mg_await(&ring->mut_evt[donut], ticket(&ring->mut_seq[donut]));
-}
-
-inline void unlock(uint donut) {
-	mg_signal(&ring->mut_evt[donut]);
-}
-*/
 
 inline void lock_output() {
 	mg_await(&output_evt, ticket(&output_seq));
@@ -210,6 +201,7 @@ void *consumer(void *arg) {
 	sprintf(n, "crap/c%d", val);
 	out = fopen(n, "w");
 
+
 	for (i = 0; i < N_CONS_TRIAL; i++) {
 		donut = nrand48(xsub) % D_TYPES;
 
@@ -220,16 +212,15 @@ void *consumer(void *arg) {
 
 		rec = ring->flavor[donut][(((int) tick) - 1) % D_SIZE];
 
+		mg_signal(&ring->p_evt[donut]); 
+
 		lock_output();
-		fprintf(out,"%d %d %d\n", donut, rec, (tick-1) % D_SIZE);
+		fprintf(out,"%d %d\n", donut, rec);
 		unlock_output();
 		
-
-		//lock_output();
-		mg_signal(&ring->p_evt[donut]); 
-		//unlock_output();
 		usleep(1000);
 	}
+	fclose(out);
 	printf(" %d", val);
 	return NULL;
 }

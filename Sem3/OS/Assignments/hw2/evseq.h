@@ -5,7 +5,6 @@
 	
 typedef struct mg_eventcounter {
 	uint counter;
-	pid_t owner_tid;
 	pthread_cond_t cond;
 	pthread_mutex_t mutex;
 } mevt_t;
