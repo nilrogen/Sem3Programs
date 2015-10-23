@@ -30,13 +30,13 @@
 #define bool int
 
 #define D_TYPES 4
-#define D_SIZE 250
+#define D_SIZE 500
 
 #define N_CONSUMERS 50
 #define N_PRODUCERS 30
 #define N_THREADS (N_CONSUMERS+N_PRODUCERS)
 
-#define N_CONS_TRIAL (200* 12)
+#define N_CONS_TRIAL (25 * 12)
 
 #define gettid() syscall(SYS_gettid)
 

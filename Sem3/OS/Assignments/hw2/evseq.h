@@ -5,7 +5,6 @@
 	
 typedef struct mg_eventcounter {
 	uint counter;
-	int nv; 
 	pthread_cond_t *cond;
 	pthread_mutex_t *mutex;
 } mevt_t;
@@ -17,9 +16,8 @@ typedef struct mg_sequencer {
 } mseq_t;
 
 extern int evtc_init(mevt_t *);
-extern int set_counter(mevt_t *, uint);
 extern void mg_await(mevt_t *, uint);
-extern void mg_signal(mevt_t *);
+extern void mg_advance(mevt_t *);
 
 extern uint seq_init(mseq_t *);
 extern uint ticket(mseq_t *);

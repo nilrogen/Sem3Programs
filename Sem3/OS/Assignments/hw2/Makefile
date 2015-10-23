@@ -1,3 +1,5 @@
+# Author: Michael Gorlin
+#
 
 FLAGS = -Wall -g
 LIBS = -pthread 
@@ -13,4 +15,5 @@ evseq.o : evseq.c evseq.h assignment2.h
 
 clean :
 	rm *.o procscope threadscope
-	if [ -e crap ]; then rm -r crap/; mkdir crap/; fi;
+	if [ -e fulloutput ]; then rm -r fulloutput/; mkdir fulloutput/; fi;
+	rm cons*

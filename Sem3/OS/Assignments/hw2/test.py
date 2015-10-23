@@ -1,5 +1,6 @@
-import sys
+#!/usr/bin/python
 
+import glob 
 def test(v):
     t1 = len(v) * (len(v)-1) / 2
     t2 = sum(v)
@@ -10,22 +11,25 @@ def test(v):
 if __name__ == '__main__':
     d = [[],[],[],[]]
     old = {}
+    i = 1
 
-    nc = 50
     print '\nTesting Consumers -----'
-    for i in range(nc):
-        f = open('crap/c'+str(i+1), 'r')
-        for val in f:
-            val = val.strip().split(' ')
-            dtype = int(val[0])
-            donut = int(val[1])
+    for fname in glob.glob("fulloutput/c*"):
+        fread = open(fname, 'r')
+        for line in fread:
+            line = line.strip().split(' ')
+            dtype = int(line[0])
+            donut = int(line[1])
             if donut in d[dtype]:
-                print "THIS IS WRONG. Donut %d, from consumer c%d" % (donut, i+1)
+                print "THIS IS WRONG. Donut %d, from consumer c%d" \
+                       % (donut, i)
                 print 'PREVIOUS WAS c%d' % (old[(dtype, donut)])
+                i += 1
                 break
             d[dtype].append(donut)
-            old[(dtype, donut)] = i+1
-        f.close()
+            old[(dtype, donut)] = i
+            i += 1
+        fread.close()
 
 
     print 'Actual  Test'
