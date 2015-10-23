@@ -18,7 +18,7 @@ extern int evtc_init(mevt_t *val) {
 	return 0;
 }
 
-extern void mg_await(mevt_t *val, uint ticket) {
+extern void mg_await(mevt_t *val, int ticket) {
 	mutex_lock(val->mutex);
 	
 	while (ticket > val->counter) {
@@ -34,7 +34,7 @@ extern void mg_advance(mevt_t *val) {
 }
 
 
-extern uint seq_init(mseq_t *val) {
+extern int seq_init(mseq_t *val) {
 	val->counter = 0; 
 	val->mutex = (pthread_mutex_t *) malloc(sizeof(pthread_mutex_t));
 	pthread_mutex_init(val->mutex, NULL);
@@ -42,8 +42,8 @@ extern uint seq_init(mseq_t *val) {
 	return 0;
 }
 
-extern uint ticket(mseq_t *val) {
-	uint retv;
+extern int ticket(mseq_t *val) {
+	int retv;
 
 	mutex_lock(val->mutex);
 	retv = val->counter++;

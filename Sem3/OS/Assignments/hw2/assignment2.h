@@ -19,16 +19,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#ifndef TRUE
-# define TRUE  1
-#endif
-#ifndef FALSE
-# define FALSE 0 
-#endif
-
-#define uint  int
-#define bool int
-
 #define D_TYPES 4
 #define D_SIZE 500
 
@@ -36,7 +26,8 @@
 #define N_PRODUCERS 30
 #define N_THREADS (N_CONSUMERS+N_PRODUCERS)
 
-#define N_CONS_TRIAL (25 * 12)
+#define N_DOZEN 200
+#define N_CONS_TRIAL ((N_DOZEN) * 12)
 
 #define gettid() syscall(SYS_gettid)
 

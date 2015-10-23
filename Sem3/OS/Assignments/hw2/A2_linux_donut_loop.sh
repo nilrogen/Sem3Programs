@@ -1,24 +1,27 @@
-#! /bin/bash
+#!/bin/bash
 
-# usage: A4_linux_donut_loop.sh  number_of_runs_integer
-# so from the shell prompt:  $ A4_linux_donut_loop.sh 10 
+# usage: A2_linux_donut_loop.sh  number_of_runs_integer
+# so from the shell prompt:  $ A2_linux_donut_loop.sh 10 
 # 10 times and report how many of the runs ended in deadlock
 
 if [ -z $1 ]
 then
-	echo "USAGE: A4_linux_donut_loop.sh  number_of_runs_integer"
+	echo "USAGE: A2_linux_donut_loop.sh  number_of_runs_integer"
 	echo "Try the command again"
 	echo " "
 fi
 
 if [ -z $2 ] 
 then 
-	pname=procscope
+	pname=processscope
 else
-	pname=threadscope
+	pname=systemscope
 fi
-		
-	
+
+if [ -n $3 ] 
+then
+	args=$3
+fi
 
 echo " "
 echo "The configuration is for $1 LOOPS"
@@ -27,16 +30,23 @@ echo " "
 local1=$1
 lpcnt=1
 count=0
-pname=procscope
+
+echo $@
+
 while test $local1 -ne 0
 do
 	echo " "
 	echo "Working on LOOP $lpcnt"
 	echo " "
-	./$pname &
+	if [ -z $3 ]
+	then
+		./$pname &
+	else
+		./$pname $3 &
+	fi
 	pid=`ps | grep $pname | cut -c1-6`
 	echo JOB AND PID IS $pid
-	sleep 3
+	sleep 30
 	pid=`ps | grep $pname | cut -c1-6`
 	if [ -n "$pid" ]
 	then
@@ -48,8 +58,6 @@ do
 		count=`expr $count + 1`
 		echo "#### KILLING ALL THREADS"
 		kill $pid
-	else
-		python test.py
 	fi
 	local1=`expr $local1 - 1`
 	lpcnt=`expr $lpcnt + 1`

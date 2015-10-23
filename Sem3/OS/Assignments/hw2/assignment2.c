@@ -2,8 +2,9 @@
 #include "evseq.h"
 	
 #define CPU_CK_COUNT 24
-#define THREAD_SCOPE 1
-#define CPU_SCOPE 0
+
+#define SYSTEM_SCOPE  1
+#define PROCESS_SCOPE 0
 
 static int output_state, scope_type;
 static pthread_t thread_id[N_THREADS];
@@ -24,27 +25,25 @@ void set_state(int, char ***);
 
 void init_seed(ushort (*)[]);
 
-void cpu_scope();
-void thread_scope();
+void system_scope();
+void process_scope();
 
 int main(int argc, char *argv[]) {
 	int i, j;
-	//struct timeval first_time, last_time;
 	int con_args[N_CONSUMERS];
-	//int pro_args[N_PRODUCERS];
 	FILE *fout;
 	struct timeval startt, endt; 
 
-	gettimeofday(&startt, (struct timezone *) 0);
 
+	// Initialize values
 	set_state(argc, &argv);
 
 	if (output_state & 1) {
 		fout = fopen("timing", "a");
 	}
 
-	if (scope_type == CPU_SCOPE) {
-		cpu_scope();
+	if (scope_type == PROCESS_SCOPE) {
+		system_scope();
 	}
 
 	ring = (struct donut_ring *) calloc(sizeof(struct donut_ring), 1);
@@ -53,7 +52,6 @@ int main(int argc, char *argv[]) {
 		exit(1);
 	}
 
-	// Initialize all mutex types. 
 	for (i = 0; i < D_TYPES; i++) {
 		evtc_init(&ring->p_evt[i]);
 		seq_init(&ring->p_seq[i]);
@@ -64,6 +62,9 @@ int main(int argc, char *argv[]) {
 
 
 	printf("---- CREATING THREADS ----\n");
+	// Start threads
+
+	gettimeofday(&startt, (struct timezone *) 0);
 
 	for (i = 0; i < N_PRODUCERS; i++) {
 		if(pthread_create(&thread_id[i], NULL, producer, NULL)) {
@@ -88,10 +89,10 @@ int main(int argc, char *argv[]) {
 		pthread_join(thread_id[i], NULL);
 		printf("*");
 	}
-
+	
 	printf("\n---- PROGRAM FINISHED ----\n");
 
-
+	// Calculate Execution Time (Ignores initialization of values)
 	gettimeofday(&endt, (struct timezone *) 0);
 	if ((i = endt.tv_sec - startt.tv_sec) == 0) {
 		j = endt.tv_usec - startt.tv_usec;
@@ -115,12 +116,12 @@ int main(int argc, char *argv[]) {
 }
 
 void *producer(void *arg) {
-	uint donut;
-	uint tick;
+	int donut;
+	int tick;
 	ushort xsub[3];
 
-	if (scope_type == THREAD_SCOPE) {
-		thread_scope();
+	if (scope_type == SYSTEM_SCOPE) {
+		process_scope();
 	}
 
 	init_seed(&xsub);
@@ -143,15 +144,15 @@ void *consumer(void *arg) {
 	int thread_state;
 	int i, index;
 	int *orders;
-	uint donut, tick, rec; 
+	int donut, tick, rec; 
 	char str[20];
 	FILE *verbose_out, *project_out;
 	struct tm *out_help;
 	struct timeval finish_time;
 	ushort xsub[3];
 
-	if (scope_type == THREAD_SCOPE) {
-		thread_scope();
+	if (scope_type == SYSTEM_SCOPE) {
+		process_scope();
 	}
 	init_seed(&xsub);
 
@@ -164,7 +165,7 @@ void *consumer(void *arg) {
 	}
 	memset(str, 0, 20);
 
-	if (output_state & 3 && thread_num <= 5) {
+	if (output_state & 4 && thread_num <= 5) {
 		thread_state = 1;
 		orders = (int *)calloc(sizeof(int), 120*2);
 		sprintf(str, "cons%d", thread_num);
@@ -203,10 +204,13 @@ void *consumer(void *arg) {
 		fclose(verbose_out);
 	}
 	if (thread_state) {
+		// Output
 		memset(str, 0, 20);
+		/// Get Nicely formatted time string
 		gettimeofday(&finish_time, (struct timezone *) 0);
 		out_help = localtime(&finish_time.tv_sec);
 		strftime(str, 20, "%H:%M:%S", out_help);
+
 		fprintf(project_out, "Consumer %d", thread_num);
 		fprintf(project_out, ", Time: %s", str);
 		fprintf(project_out, "\n\nDonut order by dozen:");
@@ -226,11 +230,11 @@ void set_state(int argc, char ***argv) {
 	int i, k;
 	char val;
 
-	if (strcmp((*argv)[0] + 2, "threadscope") == 0) {
-		scope_type = THREAD_SCOPE;
+	if (strcmp((*argv)[0] + 2, "systemscope") == 0) {
+		scope_type = SYSTEM_SCOPE;
 	}
 	else {
-		scope_type = CPU_SCOPE;
+		scope_type = PROCESS_SCOPE;
 	}
 
 	for (i = 1; i  < argc; i++) {
@@ -249,8 +253,8 @@ void set_state(int argc, char ***argv) {
 			case 'f': // Full consumer output (for test.py usage)
 				output_state |= 2;
 				break;
-			case 's': // Required Project output
-				output_state |= 3;
+			case 'p': // Required Project output
+				output_state |= 4;
 				break;
 			}
 			val = (*argv)[i][k++];
@@ -267,7 +271,7 @@ void init_seed(ushort (*xsub)[]) {
 	(*xsub)[2] = (unsigned short) (pthread_self());
 }
 
-void cpu_scope() {
+void system_scope() {
 	int proc_cnt=0, i;
 	cpu_set_t mask;	
 	ushort xsub[3];
@@ -293,7 +297,7 @@ void cpu_scope() {
 
 }
 
-void thread_scope() {
+void process_scope() {
 	int proc_cnt = 0, i;
 	cpu_set_t mask;	
 	ushort xsub[3];
