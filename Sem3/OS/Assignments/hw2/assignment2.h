@@ -20,14 +20,13 @@
 #include <stdio.h>
 
 #define D_TYPES 4
-#define D_SIZE 500
+#define D_SIZE 1000
 
 #define N_CONSUMERS 50
 #define N_PRODUCERS 30
 #define N_THREADS (N_CONSUMERS+N_PRODUCERS)
 
-#define N_DOZEN 200
-#define N_CONS_TRIAL ((N_DOZEN) * 12)
+#define N_CONS_TRIAL (100 * 12)
 
 #define gettid() syscall(SYS_gettid)
 

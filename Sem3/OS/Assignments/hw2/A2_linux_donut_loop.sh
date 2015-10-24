@@ -11,13 +11,6 @@ then
 	echo " "
 fi
 
-if [ -z $2 ] 
-then 
-	pname=processscope
-else
-	pname=systemscope
-fi
-
 if [ -n $3 ] 
 then
 	args=$3
@@ -28,6 +21,7 @@ echo "The configuration is for $1 LOOPS"
 echo " "
 
 local1=$1
+proc=$2
 lpcnt=1
 count=0
 
@@ -40,14 +34,19 @@ do
 	echo " "
 	if [ -z $3 ]
 	then
-		./$pname &
+		./$proc &
 	else
-		./$pname $3 &
+		./$proc $3 &
 	fi
-	pid=`ps | grep $pname | cut -c1-6`
+	pid=`ps | grep $proc | cut -c1-6`
 	echo JOB AND PID IS $pid
-	sleep 30
-	pid=`ps | grep $pname | cut -c1-6`
+	if [[ $proc == "proc*" ]] 
+	then
+		sleep 15
+	else
+		sleep 20
+	fi
+	pid=`ps | grep $proc | cut -c1-6`
 	if [ -n "$pid" ]
 	then
 		echo PID REMAINING IS $pid

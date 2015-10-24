@@ -37,13 +37,14 @@ int main(int argc, char *argv[]) {
 
 	// Initialize values
 	set_state(argc, &argv);
+	printf("%d - %d\n", scope_type, output_state);
 
 	if (output_state & 1) {
 		fout = fopen("timing", "a");
 	}
 
 	if (scope_type == PROCESS_SCOPE) {
-		system_scope();
+		process_scope();
 	}
 
 	ring = (struct donut_ring *) calloc(sizeof(struct donut_ring), 1);
@@ -121,7 +122,7 @@ void *producer(void *arg) {
 	ushort xsub[3];
 
 	if (scope_type == SYSTEM_SCOPE) {
-		process_scope();
+		system_scope();
 	}
 
 	init_seed(&xsub);
@@ -145,14 +146,14 @@ void *consumer(void *arg) {
 	int i, index;
 	int *orders;
 	int donut, tick, rec; 
-	char str[20];
+	char str[25];
 	FILE *verbose_out, *project_out;
 	struct tm *out_help;
 	struct timeval finish_time;
 	ushort xsub[3];
 
 	if (scope_type == SYSTEM_SCOPE) {
-		process_scope();
+		system_scope();
 	}
 	init_seed(&xsub);
 
@@ -167,11 +168,12 @@ void *consumer(void *arg) {
 
 	if (output_state & 4 && thread_num <= 5) {
 		thread_state = 1;
-		orders = (int *)calloc(sizeof(int), 120*2);
+		orders = (int *)malloc(sizeof(int)*2*120);
 		sprintf(str, "cons%d", thread_num);
 		project_out = fopen(str, "w");
 	}
 	else {
+		thread_state = 0;
 		project_out = NULL;
 	}
 
@@ -196,7 +198,7 @@ void *consumer(void *arg) {
 			orders[i*2] = rec;
 		}
 		if (i % 12 == 0) {
-			usleep(1000);
+			usleep(500);
 		}
 	}
  
@@ -229,6 +231,8 @@ void *consumer(void *arg) {
 void set_state(int argc, char ***argv) {
 	int i, k;
 	char val;
+
+	output_state = 0;
 
 	if (strcmp((*argv)[0] + 2, "systemscope") == 0) {
 		scope_type = SYSTEM_SCOPE;
@@ -271,7 +275,7 @@ void init_seed(ushort (*xsub)[]) {
 	(*xsub)[2] = (unsigned short) (pthread_self());
 }
 
-void system_scope() {
+void process_scope() {
 	int proc_cnt=0, i;
 	cpu_set_t mask;	
 	ushort xsub[3];
@@ -297,7 +301,7 @@ void system_scope() {
 
 }
 
-void process_scope() {
+void system_scope() {
 	int proc_cnt = 0, i;
 	cpu_set_t mask;	
 	ushort xsub[3];

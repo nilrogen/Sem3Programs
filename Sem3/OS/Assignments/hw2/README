@@ -1,4 +1,5 @@
 Michael Gorlin
+mgorlin@cs.uml.edu (can you send my last assignments grade too?)
 Degree of Success: 80%
 91.515 Assignment 2
 
@@ -7,49 +8,58 @@ My program implements event counters and sequencers using pthread mutex
 primitives. My program was tested on both on mercury and on a Ubuntu Linux
 virtual machine with 2 CPU cores and 384 MB of RAM. 
 
-The Program can be run using either 'procscope' or 'threadscope'. 'procscope'
-schedules the threads on a single random core, whereas 'threadscope' schedules
-each thread to a random core. The professor provided shell script has been
-modified to default to use 'procscope', with a second input argument to
-change the scope (run with the argument threadscope)
+I had a surprising amount of trouble with this program. Mostly because when
+I was initially running it, I was using a large queue size and a small number
+of items consumed per thread. When I scaled up my values to sizes needed to 
+test (200 dozen items/thread and a queue size of 200), my entire program fell
+apart. Turns out that my implementation of the problem was completely 
+incorrect. Primarily I was not calling await on the other type of threads 
+event counter. 
 
-My design for the mutex primitives was the first implemented feature. Event
-counters are implemented in such a way that the thread that calls mg_await
-does not have to call mg_signal somewhere after in execution. This was odd
-to me at first but is ultimately correct. Partial ordering for event counters
-works in theory, but I'm not sure if the way I implemented it is the best.
-I've added a function set_counter for event counters. While formally not
-a "normal" function for event counters, they are a simplification of 
-calling signal 'n' times. 
+My implementation now works, which required a full day of fixing my code. 
+I've created a python script that tests a full set of output for correctness.
+Which while slow, does show that each consumer consumes four unique monotonic
+sequences of integers.
 
+My implementation is far slower then I feel it should be. Compared to my 
+undergrad implementation of this program using just pthread mutex and 
+condition variables, my program runs maybe 3x slower. I'm pretty sure
+It can be optimized in some way, I just don't know how or care to do it
+now. 
 
-I have a few issues with my program. Sometimes (maybe <5% of the time) it
-fails for seemingly no reason. It seems like sometimes ticket doesn't return
-what it should. Maybe there is a memory address issue; an issue with file
-output; a problem with my test program; an issue with my implementation;
-or some issue that is out of my control. It's very weird whatever the reason
-is, and I don't have the time to figure whatever this bug is. 
+TEST RESULTS:
 
-My other issue is that I'm not entirely sure that It works correctly. I am
-unable to identfy where I have a mistake, but my program seems to work most
-of the time for 'procscope' and less so for 'threadscope'. Primarily the
-'threadscope' program runs about the same speed as the 'procscope' program.
-Based on the output from Bill's tests in class it seems that 'threadscope'
-should be on the order of ~2x slower then 'procscope'.
-
-The timing data comes from executions on mercury. The running parameters
-were 30 producers, 50 consumers, 120 donuts consumed, 100 buffer size,
-4 types. Processor scope ran with an average time of ~.4249 seconds.
-Thread scope ran with an average time of ~.5346 seconds. The timing files
-can be found in the timingoutput/ directory. The results lead me to think 
-that there is an issue with my implementation. As stated above I feel the
-program run on 1 core should be faster then among all the cores.
+My tests were run for 100 dozen only. As stated before my implementation
+is slow. For 200 dozen I was seeing times of >20 seconds. Waiting for that
+40 seconds per loop and visibly using a lot of compute time on mercury 
+was undesirable. Ten minutes per test was much longer then I had time for. 
 
 
+Test 1's -- the time to complete 10 tests of 100 dozen at 500 queue depth --
+data can be found in the appropriately named files. 
+
+Average for process scope:  5.2628
+Average for system scope:  11.0054
 
 
+Test 2's data can be found in a table in the directory. The results are pretty
+linear looking. My 50% mark for system scope was about 500 queue depth. For
+process scope it was maybe 350 queue depth. 
+
+HOW TO RUN AND TEST MY PROGRAM:
+
+The main program supports 3 arguments in the form (-t -f or -tf)
+
+The arguments are:
+
+-t : creates or appends to a timing file in the working dir.
+
+-f : creates a full set of output data for consumers in the fulloutput/
+	 directory. After you can run test.py to test correctness. 
+
+-p : produces the required output for the program 
 
 
-
-
+The A2_... Program has 2 additional arguments the name of the program
+to run and the arguments (if any) to that program.
 
