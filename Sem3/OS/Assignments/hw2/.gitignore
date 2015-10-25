@@ -1,8 +1,6 @@
 fulloutput/*
-timingoutput/*
 *.swp
 *.o
-*.bu
 test
 procscope
 threadscope
