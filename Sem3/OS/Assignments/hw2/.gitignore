@@ -1,4 +1,6 @@
 fulloutput/*
+timingoutput/*
+oldstuff/*
 *.swp
 *.o
 test
