@@ -27,8 +27,13 @@ extern int mlist_destroy(struct mlist *);
 extern int mlist_insert(struct mlist *, void *);
 extern int mlist_append(struct mlist *, void *);
 
+extern struct mlist_node *mlist_delete_at(struct mlist *, int);
+extern struct mlist_node *mlist_delete_front(struct mlist *);
+extern struct mlist_node *mlist_delete_back(struct mlist *);
+
 extern int mlist_iter_init(struct mlist *, struct mlist_iter *);
 extern struct mlist_node *next(struct mlist_iter *);
 extern struct mlist_node *prev(struct mlist_iter *);
+extern struct mlist_node *current(struct mlist_iter *);
 
 #endif
