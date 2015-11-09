@@ -3,6 +3,11 @@
 
 #include <include.h>
 
+#ifdef __CPLUSPLUS
+extern "C" {
+#endif
+
+
 struct mlist_node;
 
 struct mlist {
@@ -35,5 +40,9 @@ extern int mlist_iter_init(struct mlist *, struct mlist_iter *);
 extern struct mlist_node *next(struct mlist_iter *);
 extern struct mlist_node *prev(struct mlist_iter *);
 extern struct mlist_node *current(struct mlist_iter *);
+
+#ifdef __CPLUSPLUS
+}
+#endif
 
 #endif
