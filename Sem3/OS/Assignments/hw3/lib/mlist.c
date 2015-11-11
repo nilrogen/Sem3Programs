@@ -1,8 +1,6 @@
 #include <ds/mlist.h>
 
-static int destroy_list(struct mlist_node *head) {
-	return 0;
-}
+static struct mlist_node *nonatomic_delete_at(struct mlist *, int);
 
 extern int mlist_init(struct mlist *list) {
 	if (list == NULL) {
@@ -16,18 +14,17 @@ extern int mlist_init(struct mlist *list) {
 }
 
 extern int mlist_destroy(struct mlist *list) {
-	if (list == NULL) {
-		return -1;
-	}
+	struct mlist_node *val;
+	
 	pthread_mutex_lock(&list->lock);
-	if (destroy_list(list->head) != 0) {
-		return -1;
+	while (list->head != NULL) {
+		val = nonatomic_delete_at(list, 0);
+		free(val->data);
+		free(val);
 	}
 	pthread_mutex_unlock(&list->lock);
 
-	if(pthread_mutex_destroy(&list->lock) != 0) {
-		return -1;
-	}
+	pthread_mutex_destroy(&list->lock);
 	return 0;
 }
 
@@ -75,17 +72,15 @@ extern int mlist_append(struct mlist *list, void *data) {
 	return add_to_list(list, data, 0);
 }
 
-extern struct mlist_node *mlist_delete_at(struct mlist *list, int index) {
+static struct mlist_node *nonatomic_delete_at(struct mlist *list, int index) {
 	struct mlist_node *retv;
 
 	if (list == NULL) {
 		return NULL;
 	}
-	pthread_mutex_lock(&list->lock);
 
 	retv = list->head;
 	if (retv == NULL) {
-		pthread_mutex_unlock(&list->lock);
 		return NULL;
 	}
 	while (index != 0) {
@@ -106,17 +101,26 @@ extern struct mlist_node *mlist_delete_at(struct mlist *list, int index) {
 		list->head = NULL;
 		retv->head = NULL;
 		retv->tail = NULL;
-		pthread_mutex_unlock(&list->lock);
 		return retv;
 	}
 
 	retv->tail->head = retv->head;
 	retv->head->tail = retv->tail;
 
-
 	retv->head = NULL;
 	retv->tail = NULL;
 
+	return retv;
+}
+
+extern struct mlist_node *mlist_delete_at(struct mlist *list, int index) {
+	struct mlist_node *retv;
+	if (list == NULL) {
+		return NULL;
+	}
+	
+	pthread_mutex_lock(&list->lock);
+	retv = nonatomic_delete_at(list, index);
 	pthread_mutex_unlock(&list->lock);
 
 	return retv;

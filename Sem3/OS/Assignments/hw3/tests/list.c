@@ -55,6 +55,8 @@ int main(int argc, char *argv[]) {
 		current = next(iter);
 	} while (current != list->head);
 
+	mlist_destroy(list);
+
 	free(iter);
 	free(list);
 	return 0;
