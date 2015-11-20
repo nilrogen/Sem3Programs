@@ -1,10 +1,9 @@
 #include <ds/mqueue.h>
+#include <as3util.h>
 
 extern struct mlist_node *peek(mqueue *queue) {
 	struct mlist_node *ret;
-	pthread_mutex_lock(&queue->lock);
-	ret = queue->head;	
-	pthread_mutex_unlock(&queue->lock);
+	ATOMIC_GET(queue->lock, queue->head, ret);
 
 	return ret;
 }

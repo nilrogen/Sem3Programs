@@ -9,6 +9,7 @@ extern int mlist_init(struct mlist *list) {
 	if (pthread_mutex_init(&list->lock, NULL) != 0) {
 		return -1;
 	}
+	list->length = 0; 
 	list->head = NULL;
 	return 0; 
 }
@@ -59,6 +60,7 @@ static int add_to_list(struct mlist *list, void *data, int type) {
 	if (type) { // Insert (change head)
 		list->head = val;
 	} 
+	list->length += 1;
 	pthread_mutex_unlock(&list->lock);
 
 	return 0;	
@@ -93,7 +95,8 @@ static struct mlist_node *nonatomic_delete_at(struct mlist *list, int index) {
 			index--;
 		}
 	}
-
+	
+	list->length -= 1;
 	if (retv == list->head) {
 		list->head = retv->head;
 	}
@@ -138,6 +141,7 @@ extern int mlist_iter_init(struct mlist *list, struct mlist_iter *iter) {
 	if (list == NULL || iter == NULL) {
 		return -1;
 	}
+	iter->position = 0;
 	iter->list = list;
 	iter->current = list->head;
 	return 0;
@@ -151,8 +155,8 @@ static struct mlist_node *iterate(struct mlist_iter *iter, int type) {
 		return NULL;
 	}
 	switch (type) {
-	case 0:  retv = iter->current->tail; break;
-	case 1:  retv = iter->current->head; break;
+	case 0:  retv = iter->current->tail; iter->position--; break;
+	case 1:  retv = iter->current->head; iter->position++; break;
 	default: retv = iter->current; 
 	}
 	 
@@ -172,4 +176,8 @@ extern struct mlist_node *prev(struct mlist_iter *iter) {
 
 extern struct mlist_node *current(struct mlist_iter *iter) {
 	return iterate(iter, 2);
+}
+
+extern int end(struct mlist_iter *iter) {
+	return iter->position == iter->list->length;
 }

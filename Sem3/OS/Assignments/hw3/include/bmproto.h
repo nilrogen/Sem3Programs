@@ -19,34 +19,26 @@ typedef struct {
 			int operation_type; // Producer or Consumer
 		} setup_msg;
 		struct { // REPLY
-			int operation_num;  // TID
 			int status;         // SUCCESS or FAILURE
-			int operation_type; // PRODUCE or CONSUME
 			int selection;      // Buffer
 			int value;          // Value
 		} reply_msg;
 		struct { // OPERATION
-			int operation_num;
 			int operation_type; 
 			int selection;
 		} operation_msg;
-		struct { // DESTROY
-			int operation_num;
-		} destroy_msg;
 	} message;
 } bmproto_t;
 
 /* Creation Functions */
 extern bmproto_t bmp_setup(int optype);
-extern bmproto_t bmp_reply(int status, int opnum, int optype, 
-						   int selection, int value);
-extern bmproto_t bmp_operation(int opnum, int optype, int selection); 
-extern bmproto_t bmp_produce(int opnum, int selection);
-extern bmproto_t bmp_consume(int opnum, int selection);
-extern bmproto_t bmp_destroy(int opnum);
+extern bmproto_t bmp_reply(int status, int selection, int value);
+extern bmproto_t bmp_operation(int optype, int selection); 
+extern bmproto_t bmp_produce(int selection);
+extern bmproto_t bmp_consume(int selection);
+extern bmproto_t bmp_destroy();
 
 /* Value Extraction Functions */
-extern int bmp_opnum(bmproto_t proto);
 extern int bmp_optype(bmproto_t proto);
 extern int bmp_selection(bmproto_t proto);
 extern int bmp_value(bmproto_t proto);

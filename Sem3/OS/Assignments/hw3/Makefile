@@ -1,26 +1,32 @@
-#
-#
-
-VPATH = src:include:lib:build:tests
+# Michael Gorlin
+# Makefile for hw3 
 
 FLAGS = -Wall -g -I include
 LIBS = -pthread
 
-INCLUDE = $(include/*/*.h include/*.h)
+BUILDDIR = build
+BINDIR = bin
 
+INCLUDES = $(shell find include/ -name *.h)
+SOURCES = $(shell find lib/ -name *.c)
+OBJECTS = $(SOURCES:lib/%.c=$(BUILDDIR)/%.o)
 
-build/bmproto.o : bmproto.c $(INCLUDES)
+all : $(BUILDDIR) $(OBJECTS)
+	@echo Done
+
+$(BUILDDIR) :
+	@echo Making Build Directory 
+	mkdir $(BUILDDIR)
+	@echo
+
+$(BUILDDIR)/%.o : lib/%.c $(INCLUDE) 
+	@echo "Compiling: $<"
 	gcc $(FLAGS) -c $< -o $@ $(LIBS)
+	@echo
 
-build/binheap.o : binheap.c $(INCLUDES)
-	gcc $(FLAGS) -c $< -o $@ $(LIBS)
+.PHONY: clean
+clean : 
+	rm build/*.o
 
-build/mlist.o : mlist.c $(INCLUDES)
-	gcc $(FLAGS) -c $< -o $@ $(LIBS)
-
-build/mqueue.o : mqueue.c $(INCLUDES)
-	gcc $(FLAGS) -c $< -o $@ $(LIBS)
- 
-	
 
 

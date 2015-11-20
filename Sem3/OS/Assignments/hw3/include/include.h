@@ -1,5 +1,5 @@
-#ifndef _INCLUDE__H
-#define _INCLUDE__H
+#ifndef __INCLUDE_H
+#define __INCLUDE_H
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -11,5 +11,7 @@
 #include <sys/types.h>
 
 #include <pthread.h>
+
+#include <as3util.h>
 
 #endif 
