@@ -13,5 +13,9 @@
 #include <pthread.h>
 
 #include <as3util.h>
+#include <signal.h>
+#include <errno.h>
+
+extern int errno;
 
 #endif 

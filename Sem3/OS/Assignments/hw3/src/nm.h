@@ -1,6 +1,10 @@
 #ifndef __NM_H
 #define __NM_H
 
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <netdb.h>
 #include <include.h>
 
 /**
