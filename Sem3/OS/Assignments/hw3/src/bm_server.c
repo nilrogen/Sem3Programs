@@ -50,7 +50,7 @@ int child_main(int sockfd) {
 		break;
 	}
 
-	close(sockfd);
+	shutdown(sockfd, SHUT_RDWR);
 
 	return 0;
 }

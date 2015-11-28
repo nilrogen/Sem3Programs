@@ -5,7 +5,7 @@
 int request(int v) { return 0; }
 
 int setupconnection() {
-	int sockfd, cval;
+	int sockfd, cval, i;
 	struct hostent *hinfo;
 	struct sockaddr_in addr; 
 	struct in_addr *val;
@@ -25,8 +25,8 @@ int setupconnection() {
 	addr.sin_port = htons(PORT_BUFFERMANAGER);
 	addr.sin_family = AF_INET; 
 
-	do {
-		val = (struct in_addr *) *hinfo->h_addr_list;
+	for (i = 0; i < sizeof(hinfo->h_addr_list) / sizeof(char *); i++) {
+		val = (struct in_addr *) hinfo->h_addr_list[i];
 		addr.sin_addr = *val;
 		printf("PRODUCER -- BMIP - %s\n", inet_ntoa(addr.sin_addr));
 
@@ -36,7 +36,7 @@ int setupconnection() {
 			perror("connect failed");
 		else 
 			break;
-	} while (*(hinfo->h_addr_list++) != NULL);
+	}
 
 	if (cval == -1) {
 		perror("Connect failed");

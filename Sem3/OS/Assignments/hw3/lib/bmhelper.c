@@ -46,8 +46,7 @@ static int handle(int sockfd, bmmsg_t msg) {
 		bmerrno = msg.evalue;
 		return -1;
 	}
-	
-	return v;
+	return msg.ovalue;
 }
 
 extern int bmconsume(int sockfd, int type) {
