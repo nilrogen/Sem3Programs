@@ -1,6 +1,5 @@
 #include <bm.h>
 
-
 static int bmerrno; 
 
 extern bmmsg_t bmm_hton(int m, int r, int o, int e) {
@@ -32,8 +31,8 @@ static int handle(int sockfd, bmmsg_t msg) {
 	}
 
 	// Wait and read reply. Test for non reads
-	while (((v = read(sockfd, &msg, sizeof(bmmsg_t))) == -1 
-			&& errno == EINTR) || v == 0) ; // TODO: Possible error
+	while ((v = read(sockfd, &msg, sizeof(bmmsg_t))) == -1 
+			&& errno == EINTR) ; // TODO: Possible error
 	if (v == -1) {
 		perror("Read failed");
 		bmerrno = BMIOERROR;
