@@ -1,19 +1,56 @@
 #include "bm_server.h"
 
+static int shmid;
+static ring_t *ring;
 
-#define SHM_KEY 978888109
+static void sighandler(int);
+static int setsignals();
+static int setupsocket();
+static int setupshm();
 
-static struct {
-	int shmid;
-	ring_t *ring;
-} globals;
+static int produce(int type) {
+	if (setupshm() == -1) {
+		return -1;
+	}
 
-void sighandler(int);
-int setsignals();
-int setupsocket();
-int setupshm();
+	ring->buffer[type][ring->p_in[type]] = ring->pvalue[type];
+	ring->pvalue[type]++;
+	ring->p_in[type] = (ring->p_in[type] + 1) % N_ITEMS;
+
+	int i, j;
+	for (i = 0; i < N_RINGS; i++) {
+		for (j = 0; j < N_ITEMS; j++) {
+			printf("%d ", ring->buffer[i][j]);
+		}
+		printf("\n");
+	}
+
+	return 0;
+}
+static int consume(int type);
 
 int child_main(int sockfd) {
+	int tmp;
+	bmmsg_t msg; 
+
+	while ((tmp = read(sockfd, &msg, sizeof(msg))) == -1 && errno == EINTR) ;
+	if (tmp == -1) {
+		perror("BM_SERVER-CHILD: Failed to read");
+		return -1;
+	}
+	msg = bmm_ntoh(msg);
+
+	switch(msg.mtype) {
+	case BMPRODUCE: 
+		tmp = produce(msg.ring);
+		if (tmp != -1)
+			msg = bmm_hton(BMREPLY, msg.ring, tmp, BMSUCCESS);
+		else 
+			msg = bmm_hton(BMREPLY, msg.ring, -1, BMINTERNAL);
+		break;
+	}
+
+	close(sockfd);
 
 	return 0;
 }
@@ -44,6 +81,7 @@ int main(int argc, char *argv[]) {
 		switch (pid = fork()) {
 		default: // The Parent
 			close(csockfd);
+			break;
 		case -1: // Error
 			perror("Fork Failed");
 			sighandler(-1);
@@ -52,14 +90,13 @@ int main(int argc, char *argv[]) {
 			exit(1);
 		}
 	}
-	
-	return 0;
+	sighandler(-1);	
 }
 
 void sighandler(int signal) {
 	printf("Signal Handler with signal #%d.\n", signal);
 
-	if (shmctl(globals.shmid, IPC_RMID, 0) == -1) {
+	if (shmctl(shmid, IPC_RMID, 0) == -1) {
 		perror("Failed to remove shm");
 	}
 
@@ -111,7 +148,7 @@ int setupsocket() {
 	saddr.sin_family = AF_INET;
 	saddr.sin_port = htons(PORT_BUFFERMANAGER);
 	inet_pton(AF_INET, HOST_IP, &saddr.sin_addr);
-	if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) != -1) {
+	if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
 		perror("Failed to create socket");
 		return -1;
 	}
@@ -127,14 +164,14 @@ int setupsocket() {
 }
 
 int setupshm() {
-	globals.shmid = shmget(SHM_KEY, sizeof(ring_t), IPC_CREAT | 0600);
-	if (globals.shmid == -1) {
+	shmid = shmget(SHM_KEY, sizeof(ring_t), IPC_CREAT | 0600);
+	if (shmid == -1) {
 		perror("shmget failed");
 		return -1;
 	}
 
-	globals.ring = (ring_t *) shmat(globals.shmid, NULL, 0);
-	if (globals.ring == (void *) -1) {
+	ring = (ring_t *) shmat(shmid, NULL, 0);
+	if (ring == (void *) -1) {
 		perror("Failed to attach shm");
 		return -1;
 	}

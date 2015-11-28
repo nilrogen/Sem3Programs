@@ -61,6 +61,6 @@ extern int bmproduce(int sockfd, int type) {
 }
 
 
-extern int bmperror(const char *str) {
-	fprintf(stderr, "%s:   ", str);
+extern void bmperror(const char *str) {
+	fprintf(stderr, "%s:   \n", str);
 }

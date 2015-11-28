@@ -11,9 +11,9 @@
 #define BMREPLY   4 
 
 /* Errors */
-#define BMSUCCESS 0
-#define BMIOERROR 1
-#define BM
+#define BMSUCCESS  0
+#define BMIOERROR  1
+#define BMINTERNAL 2
 
 typedef struct {
 	int	mtype;  // MESSAGE TYPE: PRODUCE, CONSUME, REPLY
@@ -27,6 +27,6 @@ extern bmmsg_t bmm_ntoh(bmmsg_t);
 
 extern int bmproduce(int, int); 
 extern int bmconsume(int, int);
-extern int bmperror(const char *);
+extern void bmperror(const char *);
 
 #endif

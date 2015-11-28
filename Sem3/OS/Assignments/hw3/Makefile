@@ -16,21 +16,23 @@ PROGRAMS = bin/bm_server bin/nm bin/producer
 all : $(BUILDDIR) $(BINDIR) $(OBJECTS) $(PROGRAMS)
 	@echo Done
 
+# executable file compilation
 $(BINDIR)/bm_server : src/bm_server.c src/bm_server.h $(OBJECTS)
 	@echo Compiling $<
-	$(CC) $(FLAGS) $< -o $@ $(LIBS)
+	$(CC) $(FLAGS) $< $(OBJECTS) -o $@ $(LIBS)
 	@echo
 
 $(BINDIR)/nm : src/nm.c src/nm.h $(OBJECTS)
 	@echo Compiling $<
-	$(CC) $(FLAGS) $< -o $@ $(LIBS)
+	$(CC) $(FLAGS) $< $(OBJECTS) -o $@ $(LIBS)
 	@echo
 
 $(BINDIR)/producer : src/producer.c $(OBJECTS)
 	@echo Compiling $<
-	$(CC) $(FLAGS) $< -o $@ $(LIBS)
+	$(CC) $(FLAGS) $< $(OBJECTS) -o $@ $(LIBS)
 	@echo
 
+# Object file compilation
 $(BUILDDIR)/%.o : lib/%.c $(INCLUDE) 
 	@echo "Compiling: $<"
 	$(CC) $(FLAGS) -c $< -o $@ $(LIBS)
