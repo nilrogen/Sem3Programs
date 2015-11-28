@@ -108,7 +108,7 @@ int setsignals() {
 	struct sigaction new;
 
 	int i, nsigs;
-	int sigs[] = { SIGTERM, SIGHUP, SIGQUIT, SIGTERM, SIGSEGV, SIGFPE };
+	int sigs[] = { SIGTERM, SIGHUP, SIGINT, SIGQUIT, SIGBUS, SIGSEGV, SIGFPE };
 
 	/* Setup Zombie Prevention */
 	sigemptyset(&mask);

@@ -4,7 +4,7 @@
 #include <include.h>
 #include <arpa/inet.h>
 
-#define HOSTNAME "linux-node-1"
+#define HOSTNAME "google.com"
 
 #define BMPRODUCE 1
 #define BMCONSUME 2 
