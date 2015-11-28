@@ -10,7 +10,6 @@
 #define BMCONSUME 2 
 #define BMREPLY   4 
 
-
 /* Errors */
 #define BMSUCCESS 0
 #define BMIOERROR 1
@@ -26,8 +25,8 @@ typedef struct {
 extern bmmsg_t bmm_hton(int, int, int, int);
 extern bmmsg_t bmm_ntoh(bmmsg_t);
 
-extern int produce(int, int); 
-extern int consume(int, int);
-extern int bmperror(char *);
+extern int bmproduce(int, int); 
+extern int bmconsume(int, int);
+extern int bmperror(const char *);
 
 #endif

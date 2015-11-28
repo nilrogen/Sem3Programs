@@ -50,12 +50,17 @@ static int handle(int sockfd, bmmsg_t msg) {
 	return v;
 }
 
-extern int consume(int sockfd, int type) {
+extern int bmconsume(int sockfd, int type) {
 	bmmsg_t msg = bmm_hton(BMCONSUME, type, 0, 0);
 	return handle(sockfd, msg);
 }
 
-extern int produce(int sockfd, int type) {
+extern int bmproduce(int sockfd, int type) {
 	bmmsg_t msg = bmm_hton(BMPRODUCE, type, 0, 0);
 	return handle(sockfd, msg);
+}
+
+
+extern int bmperror(const char *str) {
+	fprintf(stderr, "%s:   ", str);
 }

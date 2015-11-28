@@ -1,26 +1,24 @@
-#ifndef __LAMPORT_H
-#define __LAMPORT_H
+#include <lamport.h>
 
-#include <include.h>
+static int clockvalue; 
 
-#define REQUEST 0
-#define REPLY   1
-#define RELEASE 2
 
-typedef struct { 
-	int clockval;
-	int node;
-	int type;
-} lmsg_t;
+extern lmsg_t hmsgton(lmsg_t msg) {
+	msg.clockval = htonl(msg.clockval);
+	msg.node = htonl(msg.node);
+	msg.type = htonl(msg.type);
+	
+	return msg;
+}
 
-extern lmsg_t hmsgton(lmsg_t);
-extern lmsg_t nmsgtoh(lmsg_t);
+extern lmsg_t nmsgtoh(lmsg_t) {
+	msg.clockval = ntohl(msg.clockval);
+	msg.node = ntohl(msg.node);
+	msg.type = ntohl(msg.type);
+	
+	return msg;
+}
 
-extern lmsg_t prepare_message(int type, int node);
-extern lmsg_t handle_message(lmsg_t);
-
-extern int request_lock();
-extern int release_lock(); 
-
-#endif
-
+extern lmsg_t prepare_message(int type, int node) {
+	
+}

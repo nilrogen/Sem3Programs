@@ -11,17 +11,22 @@ BINDIR = bin
 INCLUDES = $(shell find include/ -name *.h)
 SOURCES = $(shell find lib/ -name *.c)
 OBJECTS = $(SOURCES:lib/%.c=$(BUILDDIR)/%.o)
-PROGRAMS = bin/bm_server bin/nm
+PROGRAMS = bin/bm_server bin/nm bin/producer
 
 all : $(BUILDDIR) $(BINDIR) $(OBJECTS) $(PROGRAMS)
 	@echo Done
 
-bin/bm_server : src/bm_server.c src/bm_server.h $(OBJECTS)
+$(BINDIR)/bm_server : src/bm_server.c src/bm_server.h $(OBJECTS)
 	@echo Compiling $<
 	$(CC) $(FLAGS) $< -o $@ $(LIBS)
 	@echo
 
-bin/nm : src/nm.c src/nm.h $(OBJECTS)
+$(BINDIR)/nm : src/nm.c src/nm.h $(OBJECTS)
+	@echo Compiling $<
+	$(CC) $(FLAGS) $< -o $@ $(LIBS)
+	@echo
+
+$(BINDIR)/producer : src/producer.c $(OBJECTS)
 	@echo Compiling $<
 	$(CC) $(FLAGS) $< -o $@ $(LIBS)
 	@echo

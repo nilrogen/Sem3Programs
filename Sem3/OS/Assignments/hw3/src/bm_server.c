@@ -1,4 +1,5 @@
-#include "bm.h"
+#include "bm_server.h"
+
 
 #define SHM_KEY 978888109
 
