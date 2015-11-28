@@ -17,10 +17,14 @@ all : $(BUILDDIR) $(BINDIR) $(OBJECTS) $(PROGRAMS)
 	@echo Done
 
 bin/bm_server : src/bm_server.c src/bm_server.h $(OBJECTS)
+	@echo Compiling $<
 	$(CC) $(FLAGS) $< -o $@ $(LIBS)
+	@echo
 
 bin/nm : src/nm.c src/nm.h $(OBJECTS)
+	@echo Compiling $<
 	$(CC) $(FLAGS) $< -o $@ $(LIBS)
+	@echo
 
 $(BUILDDIR)/%.o : lib/%.c $(INCLUDE) 
 	@echo "Compiling: $<"
@@ -38,7 +42,8 @@ $(BINDIR) :
 
 .PHONY: clean
 clean : 
-	rm build/*.o
+	rm -r build
+	rm -r bin
 
 
 

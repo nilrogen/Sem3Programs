@@ -16,6 +16,7 @@
 #include <signal.h>
 #include <errno.h>
 
-extern int errno;
+#define PORT_BUFFERMANAGER 50069
+#define PORT_NODEMANAGER   50070
 
 #endif 

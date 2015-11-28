@@ -1,15 +1,14 @@
 #include "nm.h"
 
-extern int errno;
-
 
 // Role = LOCALHOST
 static const char *HOSTS[] = { "", "localhost", "192.168.1.13" };
 #define NUM_HOSTS (sizeof(HOSTS) / sizeof(char *))
 
+/*
 static struct { 
 	int *wsocks; 		
-} globals; 
+} globals;
 
 int setup_conn(int role, int nnodes) {
 	int i, sockin, sockout;
@@ -23,6 +22,7 @@ int setup_conn(int role, int nnodes) {
 
 
 }
+*/
 
 int main(int argc, char *argv[]) {
 	int i, count, nnodes, role;
@@ -47,7 +47,6 @@ int main(int argc, char *argv[]) {
 	
 	v = (struct in_addr **) ret->h_addr_list;
 
-	printf("Length - %l\n", sizeof(v) / sizeof(void *));
 	for (i = 0; i < sizeof(v)/sizeof(void *); i++) {
 		printf("%s\n", inet_ntoa(*v[i]));
 	}
