@@ -1,24 +1,31 @@
-#include <lamport.h>
+#ifndef __LAMPORT_H
+#define __LAMPORT_H
 
-static int clockvalue; 
+#include <include.h>
+#include <ds/mqueue.h>
+
+typedef struct {
+	int clock;
+	int node; 
+	mqueue *queue; 
+} lmp_mutex_t; 
+
+typedef struct {
+	int clock;
+	int node; 
+	int type;
+	int replies; 
+} lmsg_t;
+
+#define LREQUEST 0
+#define LREPLY   1
+#define LRELEASE 2
+
+extern lmsg_t hmsgton(lmsg_t);
+extern lmsg_t nmsgtoh(lmsg_t);
+
+extern int handle_request(lmp_mutex_t *, lmsg_t *, lmsg_t *); 
+//extern int handle_reply(lmp_mutex_t *, 
 
 
-extern lmsg_t hmsgton(lmsg_t msg) {
-	msg.clockval = htonl(msg.clockval);
-	msg.node = htonl(msg.node);
-	msg.type = htonl(msg.type);
-	
-	return msg;
-}
-
-extern lmsg_t nmsgtoh(lmsg_t) {
-	msg.clockval = ntohl(msg.clockval);
-	msg.node = ntohl(msg.node);
-	msg.type = ntohl(msg.type);
-	
-	return msg;
-}
-
-extern lmsg_t prepare_message(int type, int node) {
-	
-}
+#endif

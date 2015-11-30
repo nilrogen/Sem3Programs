@@ -9,11 +9,13 @@ static int setupsocket();
 static int setupshm();
 
 static int produce(int type) {
+	int rval; 
 	if (setupshm() == -1) {
 		return -1;
 	}
 
-	ring->buffer[type][ring->p_in[type]] = ring->pvalue[type];
+	rval = ring->pvalue[type];
+	ring->buffer[type][ring->p_in[type]] = rval;
 	ring->pvalue[type]++;
 	ring->p_in[type] = (ring->p_in[type] + 1) % N_ITEMS;
 
@@ -25,9 +27,28 @@ static int produce(int type) {
 		printf("\n");
 	}
 
-	return 0;
+	return rval;
 }
-static int consume(int type);
+static int consume(int type) {
+	int rval;
+	if (setupshm() == -1) {
+		return -1;
+	}
+
+	rval = ring->buffer[type][ring->p_out[type]];
+	ring->p_out[type] = (ring->p_out[type] + 1) % N_ITEMS;
+
+	int i, j;
+	printf("\n");
+	for (i = 0; i < N_RINGS; i++) {
+		for (j = 0; j < N_ITEMS; j++) {
+			printf("%d ", ring->buffer[i][j]);
+		}
+		printf("\n");
+	}
+
+	return rval;
+}
 
 int child_main(int sockfd) {
 	int tmp;
@@ -41,13 +62,22 @@ int child_main(int sockfd) {
 	msg = bmm_ntoh(msg);
 
 	switch(msg.mtype) {
-	case BMPRODUCE: 
-		tmp = produce(msg.ring);
-		if (tmp != -1)
-			msg = bmm_hton(BMREPLY, msg.ring, tmp, BMSUCCESS);
-		else 
-			msg = bmm_hton(BMREPLY, msg.ring, -1, BMINTERNAL);
-		break;
+	case BMPRODUCE: tmp = produce(msg.ring); break;
+	case BMCONSUME: tmp = consume(msg.ring); break;
+	default: tmp = -1; break;
+	}
+	if (tmp != -1) {
+		msg = bmm_hton(BMREPLY, msg.ring, tmp, BMSUCCESS);
+	}
+	else {
+		msg = bmm_hton(BMREPLY, msg.ring, -1, BMINTERNAL);
+	}
+
+	while ((tmp = write(sockfd, &msg, sizeof(msg))) == -1 && errno == EINTR) ; 
+	if (tmp == -1) {
+		perror("BM_SERVER-CHILD : Failed to send");
+		shutdown(sockfd, SHUT_RDWR);
+		return -1;
 	}
 
 	shutdown(sockfd, SHUT_RDWR);
@@ -94,7 +124,7 @@ int main(int argc, char *argv[]) {
 }
 
 void sighandler(int signal) {
-	printf("Signal Handler with signal #%d.\n", signal);
+	fprintf(stderr, "BufferManager signal handler with signal #%d.\n", signal);
 
 	if (shmctl(shmid, IPC_RMID, 0) == -1) {
 		perror("Failed to remove shm");

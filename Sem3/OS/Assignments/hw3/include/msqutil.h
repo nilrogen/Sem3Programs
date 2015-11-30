@@ -1,5 +1,5 @@
 #ifndef __MSQUTIL_H
-#define __MSQVUTIL_H
+#define __MSQUTIL_H
 
 #include <include.h>
 
@@ -8,8 +8,14 @@
 
 #define MQ_KEY  (key_t) 786929221
 
+#define NMMTYPE 1L
+
+#define REQUESTMSG 0
+#define RELEASEMSG 1
+
 typedef struct {
 	long mtype;
+	int rtype; // REQUEST OR RELEASE
 	int mutex; // Which mutex to request
 	int pid;
 } nmrequest_t;
@@ -17,18 +23,19 @@ typedef struct {
 typedef struct {
 	long mtype; // Pid << 32 | Mutex
 	int errorval;
-} nmreply_t:
+} nmreply_t;
 
 extern int open_msg(key_t);
 extern int remove_msg(int);
 
 // Producer and Consumer Use
-extern int request(int);
+extern int request(int, int);
+extern int release(int, int);
+
 
 // Node Manager Use
-extern int handle();
-
-
+extern nmrequest_t msq_next(int);
+extern int msq_reply(int, nmrequest_t);
 
 
 #endif

@@ -12,9 +12,10 @@
 
 #include <pthread.h>
 
-#include <as3util.h>
 #include <signal.h>
 #include <errno.h>
+
+#include <as3util.h>
 
 #define PORT_BUFFERMANAGER 40069
 #define PORT_NODEMANAGER   40070

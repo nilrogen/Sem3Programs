@@ -11,26 +11,32 @@ BINDIR = bin
 INCLUDES = $(shell find include/ -name *.h)
 SOURCES = $(shell find lib/ -name *.c)
 OBJECTS = $(SOURCES:lib/%.c=$(BUILDDIR)/%.o)
-PROGRAMS = bin/bm_server bin/nm bin/producer
+PROGRAMS = bin/bm_server bin/nm bin/producer bin/consumer
 
 all : $(BUILDDIR) $(BINDIR) $(OBJECTS) $(PROGRAMS)
 	@echo Done
 
 # executable file compilation
-$(BINDIR)/bm_server : src/bm_server.c src/bm_server.h $(OBJECTS)
+$(BINDIR)/bm_server : src/bm_server.c src/bm_server.h
 	@echo Compiling $<
 	$(CC) $(FLAGS) $< $(OBJECTS) -o $@ $(LIBS)
 	@echo
 
-$(BINDIR)/nm : src/nm.c src/nm.h $(OBJECTS)
+$(BINDIR)/nm : src/nm.c src/nm.h 
 	@echo Compiling $<
 	$(CC) $(FLAGS) $< $(OBJECTS) -o $@ $(LIBS)
 	@echo
 
-$(BINDIR)/producer : src/producer.c $(OBJECTS)
+$(BINDIR)/producer : src/producer.c
 	@echo Compiling $<
 	$(CC) $(FLAGS) $< $(OBJECTS) -o $@ $(LIBS)
 	@echo
+
+$(BINDIR)/consumer : src/consumer.c
+	@echo Compiling $<
+	$(CC) $(FLAGS) $< $(OBJECTS) -o $@ $(LIBS)
+	@echo
+	
 
 # Object file compilation
 $(BUILDDIR)/%.o : lib/%.c $(INCLUDE) 
