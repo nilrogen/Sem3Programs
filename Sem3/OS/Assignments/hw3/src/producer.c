@@ -34,12 +34,13 @@ int main(int argc, char *argv[]) {
 			bmperror("Failed to produce");
 		}
 		printf("PRODUCER -- PRODUCED VALUE %d\n", val);
-	return 0;
 
 		close(sockfd);	
 		break; // TODO DELETE
 	}
-	sighandler(-1);
+	
+	remove_msg(mid);
+	return 0;
 }
 
 void sighandler(int signal) {

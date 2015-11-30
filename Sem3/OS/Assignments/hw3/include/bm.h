@@ -4,7 +4,7 @@
 #include <include.h>
 #include <arpa/inet.h>
 
-#define HOSTNAME "cs91515-4"
+#define HOSTNAME "localhost"
 
 #define BMPRODUCE 1
 #define BMCONSUME 2 
