@@ -1,23 +1,50 @@
 #include "bm_server.h"
 
 static int shmid;
+static int semid[2];
+
 static ring_t *ring;
 
 static void sighandler(int);
 static int setsignals();
 static int setupsocket();
 static int setupshm();
+static int setupsem();
+
+static int handle_semop(int group, int type, int opv) {
+	int tmp;
+	struct sembuf opbuf;
+
+	opbuf.sem_num = type;
+	opbuf.sem_op  = opv;
+	opbuf.sem_flg = 0;
+
+	while ((tmp = semop(group, &opbuf, 1)) == -1 && errno == EINTR) ; 
+	if (tmp == -1) {
+		perror("semop");
+		return -1;
+	}
+	return 0;
+}
+
+// Sem ops
+static int p(int group, int type) {
+	return handle_semop(group, type, -1);
+}
+
+static int v(int group, int type) {
+	return handle_semop(group, type, 1);
+}
 
 static int produce(int type) {
 	int rval; 
-	if (setupshm() == -1) {
-		return -1;
-	}
 
+	p(semid[0], type); // P(producer)
 	rval = ring->pvalue[type];
 	ring->buffer[type][ring->p_in[type]] = rval;
 	ring->pvalue[type]++;
 	ring->p_in[type] = (ring->p_in[type] + 1) % N_ITEMS;
+	v(semid[1], type); // V(consumer)
 
 	int i, j;
 	for (i = 0; i < N_RINGS; i++) {
@@ -35,8 +62,14 @@ static int consume(int type) {
 		return -1;
 	}
 
+	printf("CONSUME: %d\n", type);
+
+	p(semid[1], type); // P(consumer)
 	rval = ring->buffer[type][ring->p_out[type]];
 	ring->p_out[type] = (ring->p_out[type] + 1) % N_ITEMS;
+	v(semid[0], type); // V(producer);
+
+	printf("CONSUME DONE: %d\n", type);
 
 	int i, j;
 	printf("\n");
@@ -53,6 +86,10 @@ static int consume(int type) {
 int child_main(int sockfd) {
 	int tmp;
 	bmmsg_t msg; 
+
+	if (setupshm() == -1 || setupsem() == -1) {
+		return -1;
+	}
 
 	while ((tmp = read(sockfd, &msg, sizeof(msg))) == -1 && errno == EINTR) ;
 	if (tmp == -1) {
@@ -97,6 +134,11 @@ int main(int argc, char *argv[]) {
 	if (setupshm() == -1) {
 		sighandler(-1);
 	}
+	if (setupsem() == -1) {
+		sighandler(-1);
+	}
+
+
 
 	while (1) {
 		// Accept Loop
@@ -124,10 +166,18 @@ int main(int argc, char *argv[]) {
 }
 
 void sighandler(int signal) {
-	fprintf(stderr, "BufferManager signal handler with signal #%d.\n", signal);
+	int i; 
+
+	fprintf(stderr, "BufferManager signal handler with signal #%d.\n", 
+			signal);
 
 	if (shmctl(shmid, IPC_RMID, 0) == -1) {
 		perror("Failed to remove shm");
+	}
+	for (i = 0; i < 2; i++) {
+		if (semctl(semid[i], IPC_RMID, 0) == -1) {
+			perror("semctl");
+		}
 	}
 
 	exit(5);
@@ -191,6 +241,27 @@ int setupsocket() {
 		return -1;
 	}
 	return sockfd;
+}
+
+int setupsem() {
+	int i, j;
+	union semun sc;
+
+	sc.val = N_ITEMS; // semid[0] producer
+	for (i = 0; i < 2; i++) {
+		if ((semid[i] = semget(SEM_KEY+i, N_RINGS, IPC_CREAT | 0600)) == -1) {
+			perror("semget");
+			return -1;
+		}
+		for (j = 0; j < N_RINGS; j++) {
+			if (semctl(semid[i], j, SETVAL, sc) == -1) {
+				perror("semctl");	
+				return -1;
+			}
+		}
+		sc.val = 0; // semid[1] consumer
+	}
+	return 0;
 }
 
 int setupshm() {

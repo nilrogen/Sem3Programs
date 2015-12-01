@@ -24,13 +24,14 @@ int main(int argc, char *argv[]) {
 
 		val = bmconsume(sockfd, type);
 		if (val == -1) {
-			bmperror("Failed to produce");
+			bmperror("Failed to consume");
 		}
-		printf("PRODUCER -- PRODUCED VALUE %d\n", val);
+		printf("CONSUMER -- CONSUMED VALUE %d\n", val);
 
 		close(sockfd);	
 		break; // TODO DELETE
 	}
+
 
 	return 0;
 }

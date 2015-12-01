@@ -24,6 +24,7 @@ int main(int argc, char *argv[]) {
 	while (1) {
 		sockfd = setupconnection();
 		if (sockfd == -1) {
+			remove_msg(mid);
 			return -1;
 		}
 
@@ -39,6 +40,7 @@ int main(int argc, char *argv[]) {
 		break; // TODO DELETE
 	}
 	
+
 	remove_msg(mid);
 	return 0;
 }
