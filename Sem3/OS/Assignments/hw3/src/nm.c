@@ -1,15 +1,53 @@
 #include "nm.h"
 
-
 // Role = LOCALHOST
 static const char *HOSTS[] = { "", "localhost", "192.168.1.13" };
 #define NUM_HOSTS (sizeof(HOSTS) / sizeof(char *))
 
-/*
-static struct { 
-	int *wsocks; 		
-} globals;
+//static pthread_mutex_t utillock;
+static lmp_mutex_t **lmutex;
 
+static int terminate;
+
+void rcv_thread(void *data) {
+	int sockfd, tmp;
+	nmsg_t msg;
+
+ 	sockfd = *(int *) data;
+
+
+	// Forever until we request termination?
+	while (terminate == 0) {
+		// Read
+		while ((tmp = read(sockfd, &msg, sizeof(nmsg_t))) == -1 
+				&& errno == EINTR) ; // Nothing
+		if (tmp == -1) {
+			fprintf(stderr, "Thread-%lu: ", pthread_self());
+			perror("Failed to read");
+			break;
+		}
+
+		// Convert
+		msg.mutex = ntohl(msg.mutex);
+		msg.lm = nmsgtoh(msg.lm);
+
+		switch (msg.lm.type) {
+		case LREQUEST:
+			handle_request(lmutex[msg.mutex], msg.lm);
+			break;
+		case LREPLY: 
+			handle_reply(lmutex[msg.mutex], msg.lm);
+			break;
+		case LRELEASE:
+			handle_release(lmutex[msg.mutex]);
+			break;
+		}
+	}
+
+	
+}
+
+/*
 int setup_conn(int role, int nnodes) {
 	int i, sockin, sockout;
 	struct hostent *hinfo;

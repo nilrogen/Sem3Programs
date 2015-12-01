@@ -1,6 +1,13 @@
 #include <ds/mqueue.h>
 #include <as3util.h>
 
+extern int mqueue_init(mqueue *queue) {
+	return mlist_init(queue);
+}
+extern int mqueue_destroy(mqueue *queue) {
+	return mlist_destroy(queue);
+}
+
 extern struct mlist_node *peek(mqueue *queue) {
 	struct mlist_node *ret;
 	ATOMIC_GET(queue->lock, queue->head, ret);

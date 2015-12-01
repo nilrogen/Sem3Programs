@@ -29,6 +29,40 @@ extern int mlist_destroy(struct mlist *list) {
 	return 0;
 }
 
+extern int mlist_add_after(struct mlist *list, struct mlist_node *node, 
+						   void *data) {
+
+	struct mlist_node *val;
+
+	if (list == NULL || node == NULL) {
+		return -1;
+	}
+
+	val = (struct mlist_node *) malloc(sizeof(struct mlist_node));
+	if (val == NULL) {
+		return -1;
+	}
+	val->data = data;
+
+	pthread_mutex_lock(&list->lock); 
+	val->tail = node; 
+	val->head = node->head;
+	node->head->tail = val;
+	node->head = val;
+
+
+	list->length++;
+	pthread_mutex_unlock(&list->lock);
+
+	return 0;
+}
+
+extern int mlist_add_before(struct mlist *list, struct mlist_node *node, 
+							void *data) {
+	
+	return mlist_add_after(list, node->tail, data);
+}
+
 static int add_to_list(struct mlist *list, void *data, int type) {
 	struct mlist_node *val, *tmp;
 
@@ -138,7 +172,7 @@ extern struct mlist_node *mlist_delete_back(struct mlist *list) {
 }
 
 extern int mlist_iter_init(struct mlist *list, struct mlist_iter *iter) {
-	if (list == NULL || iter == NULL) {
+	if (list == NULL || iter == NULL || list->head == NULL) {
 		return -1;
 	}
 	iter->position = 0;
@@ -179,5 +213,5 @@ extern struct mlist_node *current(struct mlist_iter *iter) {
 }
 
 extern int end(struct mlist_iter *iter) {
-	return iter->position == iter->list->length;
+	return abs(iter->position) == iter->list->length;
 }
