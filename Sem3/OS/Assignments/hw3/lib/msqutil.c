@@ -79,3 +79,53 @@ extern int release(int id, int mutex) {
 	return 0;
 }
 
+extern nmrequest_t msq_next(int id) {
+	int tmp; 
+	nmrequest_t req;
+
+	size_t len = sizeof(nmrequest_t) - sizeof(long);
+
+	while ((tmp = msgrcv(id, &req, len, 1L, 0 | IPC_NOWAIT)) == -1 && errno == EINTR) ; 
+	if (errno == ENOMSG) {
+		req.mtype = -2;
+		return req;
+	}
+	if (tmp == -1) {
+		perror("msgrcv"); 
+		fprintf(stderr, "%d\n", errno);
+		exit(0);
+		req.mtype = -1;
+		return req;
+	}
+
+	return req;
+}
+
+
+
+extern int msq_reply(int id, int mutex, int pid, int eval) {
+	int tmp;
+	long type;
+	nmreply_t rep;
+	
+	size_t len = sizeof(nmreply_t) - sizeof(long);
+
+	type = (long) pid;
+	type <<= 16;
+	type |= mutex;
+
+	rep.mtype = type;
+	rep.errorval = eval;
+
+
+	while ((tmp = msgsnd(id, &rep, len, 0)) == -1 && errno == EINTR) ;
+	if (tmp == -1) {
+		perror("msgsnd");
+		return -1;
+	}
+	return 0;
+}
+
+
+
+

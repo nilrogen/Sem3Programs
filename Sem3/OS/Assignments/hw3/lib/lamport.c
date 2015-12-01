@@ -3,8 +3,6 @@
 #include <sys/types.h>
 #include <arpa/inet.h>
 
-#define DATA(n) ((lmsg_t *) (n)->data)
-
 extern lmsg_t hmsgton(lmsg_t msg) {
 	msg.type    = htonl(msg.type);
 	msg.clock   = htonl(msg.clock);
@@ -90,6 +88,9 @@ extern int handle_request(lmp_mutex_t *mutex, lmsg_t msg) {
 	pthread_mutex_lock(&mutex->lock);
 
 	mutex->clock++;
+	if (addv->clock == -1) {
+		addv->clock = mutex->clock;
+	}
 
 	// Handle self enqueue of message.
 	if (msg.node == mutex->node) {

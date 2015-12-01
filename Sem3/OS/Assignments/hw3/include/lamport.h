@@ -4,6 +4,8 @@
 #include <include.h>
 #include <ds/mqueue.h>
 
+#define DATA(n) ((lmsg_t *) (n)->data)
+
 typedef struct {
 	int clock;
 	int node; 

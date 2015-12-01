@@ -10,6 +10,7 @@ static int setsignals();
 static int setupsocket();
 static int setupshm();
 static int setupsem();
+static int setsems();
 
 static int handle_semop(int group, int type, int opv) {
 	int tmp;
@@ -58,9 +59,6 @@ static int produce(int type) {
 }
 static int consume(int type) {
 	int rval;
-	if (setupshm() == -1) {
-		return -1;
-	}
 
 	printf("CONSUME: %d\n", type);
 
@@ -131,10 +129,7 @@ int main(int argc, char *argv[]) {
 	if (setsignals() == -1 || (sockfd = setupsocket()) == -1) {
 		exit(1);
 	}
-	if (setupshm() == -1) {
-		sighandler(-1);
-	}
-	if (setupsem() == -1) {
+	if (setupshm() == -1 || setupsem() == -1 || setsems() == -1) {
 		sighandler(-1);
 	}
 
@@ -180,7 +175,7 @@ void sighandler(int signal) {
 		}
 	}
 
-	exit(5);
+	exit(1);
 }
 
 int setsignals() {
@@ -244,15 +239,23 @@ int setupsocket() {
 }
 
 int setupsem() {
-	int i, j;
-	union semun sc;
+	int i;
 
-	sc.val = N_ITEMS; // semid[0] producer
 	for (i = 0; i < 2; i++) {
 		if ((semid[i] = semget(SEM_KEY+i, N_RINGS, IPC_CREAT | 0600)) == -1) {
 			perror("semget");
 			return -1;
 		}
+	}
+	return 0;
+}
+
+int setsems() {
+	int i, j;
+	union semun sc;
+
+	sc.val = N_ITEMS; // semid[0] producer
+	for (i = 0; i < 2; i++) {
 		for (j = 0; j < N_RINGS; j++) {
 			if (semctl(semid[i], j, SETVAL, sc) == -1) {
 				perror("semctl");	

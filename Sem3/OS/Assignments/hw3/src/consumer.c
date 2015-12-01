@@ -20,13 +20,13 @@ int main(int argc, char *argv[]) {
 			return 0;
 		}
 
-		type = 0 ;
+		type = 0;
 
 		val = bmconsume(sockfd, type);
 		if (val == -1) {
 			bmperror("Failed to consume");
 		}
-		printf("CONSUMER -- CONSUMED VALUE %d\n", val);
+		fprintf(stderr, "CONSUMER -- CONSUMED VALUE %d\n", val);
 
 		close(sockfd);	
 		break; // TODO DELETE

@@ -28,7 +28,11 @@ int main(int argc, char *argv[]) {
 			return -1;
 		}
 
+
 		type = 0;
+		if (request(mid, type) == -1) {
+			sighandler(-1);	
+		}
 
 		val = bmproduce(sockfd, type);
 		if (val == -1) {
@@ -37,11 +41,15 @@ int main(int argc, char *argv[]) {
 		printf("PRODUCER -- PRODUCED VALUE %d\n", val);
 
 		close(sockfd);	
+		
+		if ( release(mid, type) == -1) {
+			return -1;
+		}
 		break; // TODO DELETE
 	}
 	
 
-	remove_msg(mid);
+//	remove_msg(mid);
 	return 0;
 }
 

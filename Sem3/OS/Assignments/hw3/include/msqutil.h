@@ -12,6 +12,7 @@
 
 #define REQUESTMSG 0
 #define RELEASEMSG 1
+#define REPLYMSG   2
 
 typedef struct {
 	long mtype;
@@ -21,7 +22,7 @@ typedef struct {
 } nmrequest_t;
 
 typedef struct {
-	long mtype; // Pid << 32 | Mutex
+	long mtype; // Pid << 16 | Mutex
 	int errorval;
 } nmreply_t;
 
@@ -35,7 +36,7 @@ extern int release(int, int);
 
 // Node Manager Use
 extern nmrequest_t msq_next(int);
-extern int msq_reply(int, nmrequest_t);
+extern int msq_reply(int, int, int, int);
 
 
 #endif
