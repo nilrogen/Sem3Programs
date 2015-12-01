@@ -30,6 +30,7 @@ int main(int argc, char *argv[]) {
 
 
 		type = 0;
+		printf("PRODUCER - Requesting Mutex\n");
 		if (request(mid, type) == -1) {
 			sighandler(-1);	
 		}

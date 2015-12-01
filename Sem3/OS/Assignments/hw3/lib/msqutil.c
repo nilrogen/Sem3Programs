@@ -1,6 +1,5 @@
 #include <msqutil.h>
 
-
 extern int open_msg(key_t key) {
 	int mid;
 	if ((mid = msgget(key, IPC_CREAT | 0600)) == -1) {
@@ -85,13 +84,13 @@ extern nmrequest_t msq_next(int id) {
 
 	size_t len = sizeof(nmrequest_t) - sizeof(long);
 
-	while ((tmp = msgrcv(id, &req, len, 1L, 0 | IPC_NOWAIT)) == -1 && errno == EINTR) ; 
+	while ((tmp = msgrcv(id, &req, len, 1L, 0)) == -1 && errno == EINTR) ; 
 	if (errno == ENOMSG) {
 		req.mtype = -2;
 		return req;
 	}
 	if (tmp == -1) {
-		perror("msgrcv"); 
+		perror("msgrcv WTF"); 
 		fprintf(stderr, "%d\n", errno);
 		exit(0);
 		req.mtype = -1;

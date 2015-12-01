@@ -21,6 +21,10 @@ int main(int argc, char *argv[]) {
 		}
 
 		type = 0;
+		if (request(mid, type + 4) == -1) {
+			printf("BADSHIT HAPPEND YO\n.");
+			return -1;
+		}
 
 		val = bmconsume(sockfd, type);
 		if (val == -1) {

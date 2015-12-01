@@ -61,7 +61,7 @@ void *snd_thread(void *data) {
 	lmsg_t *hmsg;
 	nmsg_t msg;
 	nmrequest_t req;
-	int *connections = (int *) data; 	
+	int *connections = (int *) data;
 
 	while (terminate == 0) {
 		// Check if any queues can go (replied from all nodes)
@@ -80,32 +80,41 @@ void *snd_thread(void *data) {
 
 			}
 		}
+
+		// Get the next message from the message queue
 		req = msq_next(msgid);
 		if (req.mtype == -2L) { // If no messages sleep
 			usleep(100);
 			continue;
 		}
-		if (req.mtype == -1L) {
+		if (req.mtype == -1L) { // Failure
 			fprintf(stderr, "msq failue.\n");
 			continue;
 		}
-		
-		if (req.rtrype == RELEASEMSG) {
 
-
-		}
-		// Handle next request
+		// Which mutex is this refering too
 		msg.mutex = req.mutex; 
-		msg.lm.type = LREQUEST;
-		msg.lm.clock = -1; // Set
-		msg.lm.node = nodenumber;
-		msg.lm.pid  = req.pid;
-		msg.lm.replies = 1;
 
-		// Add to lamport mutex
-		if (handle_request(lmutex[msg.mutex], msg.lm) == -1) {
-			fprintf(stderr, "Failed to handle request.\n");
-			continue;
+		// If a local process releases its mutex then we locally handle the
+		// release and send a release message to all the 
+		if (req.rtype == RELEASEMSG) {
+			msg.lm = *handle_release(lmutex[msg.mutex]);
+		}
+		else {
+
+			// Handle next request
+			msg.lm.type = LREQUEST;
+			msg.lm.clock = -1; // Set
+			msg.lm.node = nodenumber;
+			msg.lm.pid  = req.pid;
+			msg.lm.replies = 1;
+
+			// Add to lamport mutex
+			msg.lm.clock = handle_request(lmutex[msg.mutex], msg.lm);
+			if (msg.lm.clock -= -1) {
+				fprintf(stderr, "Failed to handle request.\n");
+				continue;
+			}
 		}
 
 		// Send to connected entities

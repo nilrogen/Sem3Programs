@@ -74,6 +74,7 @@ extern int lmp_mutex_destroy(lmp_mutex_t *mutex) {
 extern int handle_request(lmp_mutex_t *mutex, lmsg_t msg) {
 	struct mlist_iter iter;
 	lmsg_t *val, *addv;
+	int retv;
 	int eval = 0;
 
 	addv = (lmsg_t *) malloc(sizeof(lmsg_t));
@@ -100,9 +101,11 @@ extern int handle_request(lmp_mutex_t *mutex, lmsg_t msg) {
 			pthread_mutex_unlock(&mutex->lock); 
 			return -1;
 		}
+
+		retv = mutex->clock;
 		pthread_mutex_unlock(&mutex->lock); 
 
-		return 0;
+		return retv;
 	}
 
 	// Handle request with clock value >= own clock value
@@ -114,9 +117,12 @@ extern int handle_request(lmp_mutex_t *mutex, lmsg_t msg) {
 			pthread_mutex_unlock(&mutex->lock); 
 			return -1;
 		}
+
+		retv = mutex->clock;
+
 		pthread_mutex_unlock(&mutex->lock); 
 
-		return 0;
+		return retv;
 	}
 
 	// Handle requests with clock value < own clock value
@@ -152,13 +158,15 @@ extern int handle_request(lmp_mutex_t *mutex, lmsg_t msg) {
 		}
 		val = DATA(next(&iter));
 	}
+	retv = mutex->clock;
 	pthread_mutex_unlock(&mutex->lock);
 
 	if (eval == -1) {
 		fprintf(stderr, "Failed to add to list.\n");
+		return -1;
 	}
 	
-	return eval;
+	return retv;
 }
 
 extern int handle_reply(lmp_mutex_t *mutex, lmsg_t msg) {
@@ -211,7 +219,17 @@ extern lmsg_t *handle_release(lmp_mutex_t *mutex) {
 		return NULL;
 	}
 
-	ATOMIC_GET(mutex->lock, DATA(dequeue(mutex->queue)), retv);
+	pthread_mutex_lock(&mutex->lock);
+	retv  = DATA(dequeue(mutex->queue)); 
+
+	// The return value is ignored in the rcv_threads
+	// But the return value is sent in the snd_thread
+	// SO we update the clock and type atomically
+	// here.
+	mutex->clock++;
+	retv->clock = mutex->clock;
+	retv->type = LRELEASE;
+	pthread_mutex_unlock(&mutex->lock);
 
 	return retv;
 }
