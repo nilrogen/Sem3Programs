@@ -1,20 +1,14 @@
 #!/bin/bash
 
-hname=`hostname`
-role=0
+ssh mgorlin@cs91515-4 hw3/bin/nm 3 &
+ssh mgorlin@cs91515-4 hw3/bin/bm_server &
 
-if [ $hname == "cs91515-1" ]; then
-	./bin/nm 2 &
-elif [ $hname == "cs91515-4" ]; then
-	./bin/nm 1 &
-	./bin/bm_server & 
-fi
+ssh mgorlin@cs91515-3 hw3/bin/nm 2 &
 
-sleep 1
-./bin/producer
+ssh mgorlin@cs91515-2 hw3/bin/nm 1 &
+ssh mgorlin@cs91515-1 hw3/bin/producer
 
-killall nm 
-killall bm_server
+
 
 
 

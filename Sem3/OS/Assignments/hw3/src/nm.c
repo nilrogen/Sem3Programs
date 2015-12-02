@@ -80,7 +80,6 @@ void *snd_thread(void *data) {
 		// Check if any queues can go (replied from all nodes)
 		for (i = 0 ; i < N_MUTEX; i++) {
 			// If empty
-			printf("Looking for elements");
 			if (lmutex[i]->queue->length == 0)
 				continue;
 
@@ -94,7 +93,6 @@ void *snd_thread(void *data) {
 				}
 
 			}
-			printf("Done\n");
 		}
 
 		// Get the next message from the message queue
@@ -113,7 +111,7 @@ void *snd_thread(void *data) {
 
 		// If a local process releases its mutex then we locally handle the
 		// release and send a release message to all the 
-		if (req.rtype == RELEASEMSG) {
+		if (req.rtype == LRELEASE) {
 			msg.lm = *handle_release(lmutex[msg.mutex]);
 		}
 		else {
@@ -127,7 +125,7 @@ void *snd_thread(void *data) {
 
 			// Add to lamport mutex
 			msg.lm.clock = handle_request(lmutex[msg.mutex], msg.lm);
-			if (msg.lm.clock -= -1) {
+			if (msg.lm.clock == -1) {
 				fprintf(stderr, "Failed to handle request.\n");
 				continue;
 			}
