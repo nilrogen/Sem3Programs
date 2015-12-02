@@ -219,6 +219,7 @@ int setsignals() {
 int setupsocket() {
 	int sockfd;
 	struct sockaddr_in saddr;
+	int val = 1;
 
 	saddr.sin_family = AF_INET;
 	saddr.sin_port = htons(PORT_BUFFERMANAGER);
@@ -226,6 +227,10 @@ int setupsocket() {
 	if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
 		perror("Failed to create socket");
 		return -1;
+	}
+	if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, 
+		&val, sizeof(int)) == -1) {
+		perror("setsockopt");
 	}
 	if (bind(sockfd, (struct sockaddr *) &saddr, sizeof(saddr)) == -1) {
 		perror("Failed to bind socket");

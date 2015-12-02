@@ -6,7 +6,6 @@
 #include <sys/ipc.h>
 #include <sys/msg.h>
 
-#define MQ_KEY  (key_t) 786929221
 
 #define NMMTYPE 1L
 

@@ -1,7 +1,7 @@
 #include "nm.h"
 
 // Role = LOCALHOST
-static const char *HOSTS[] = { "", "localhost" };
+static const char *HOSTS[] = { "", "cs91515-2", "cs91515-3", "cs91515-4"};
 #define N_HOSTS (sizeof(HOSTS) / sizeof(char *))
 #define N_NODES (N_HOSTS - 1)
 
@@ -16,6 +16,7 @@ static int terminate;
 
 static void sendtoall(int *, nmsg_t);
 static pthread_t setup_conn(int);
+
 static void sighandler(int);
 static int setsignals();
 
@@ -24,6 +25,8 @@ void *rcv_thread(void *data) {
 	nmsg_t msg;
 
  	sockfd = *(int *) data;
+
+	setsignals();
 
 
 	// Forever until we request termination?
@@ -53,6 +56,7 @@ void *rcv_thread(void *data) {
 			break;
 		}
 	}
+	sighandler(-1);
 	return NULL;
 }
 
@@ -63,10 +67,20 @@ void *snd_thread(void *data) {
 	nmrequest_t req;
 	int *connections = (int *) data;
 
+	setsignals();
+	
+	assert(connections != NULL);
+	printf("NM: %d\n", sizeof(connections) / sizeof(int));
+	for (i = 0; i < sizeof(connections) / sizeof(int); i++) {
+		printf("NM: %d\n", connections[i]);
+	}
+
+
 	while (terminate == 0) {
 		// Check if any queues can go (replied from all nodes)
 		for (i = 0 ; i < N_MUTEX; i++) {
 			// If empty
+			printf("Looking for elements");
 			if (lmutex[i]->queue->length == 0)
 				continue;
 
@@ -74,11 +88,13 @@ void *snd_thread(void *data) {
 			hmsg = DATA(peek(lmutex[i]->queue));
 			if (hmsg->replies == N_NODES) {
 				// Tell Process it can go
+				printf("NM: Process %d reply\n", hmsg->pid);
 				if (msq_reply(msgid, i, hmsg->pid, 0) == -1) {
 					fprintf(stderr, "Failure to reply.\n");
 				}
 
 			}
+			printf("Done\n");
 		}
 
 		// Get the next message from the message queue
@@ -118,8 +134,10 @@ void *snd_thread(void *data) {
 		}
 
 		// Send to connected entities
+		printf("Seending to all");
 		sendtoall(connections, msg);
 	}
+	sighandler(-1);
 	return NULL;
 }
 
@@ -128,6 +146,8 @@ void *snd_thread(void *data) {
 int main(int argc, char *argv[]) {
 	int i, role;
 	pthread_t tid;
+	
+	setsignals();
 
 	if (argc == 1) {
 		role = 1; 
@@ -137,9 +157,11 @@ int main(int argc, char *argv[]) {
 	}
 
 	nodenumber = role - 1;
+	printf("NM (%d) Started.\n", nodenumber);
 
 	// Create MSQ
 	if ((msgid = open_msg(MQ_KEY)) == -1) {
+		perror("open_msg");
 		return -1;
 	}
 
@@ -153,20 +175,23 @@ int main(int argc, char *argv[]) {
 
 	// Connects and creates new threads
 	if ((tid = setup_conn(role)) == -1) {
+		printf("Failed to setup connections.\n");
 		sighandler(-1);
 	}
 
+	printf("NM: Main Wait\n");
 
-	// Set signals 
-	if (setsignals() == -1) {
-		perror("Failed to set signals");
-		sighandler(-1);
-	}
+	int sigs[] = { SIGTERM, SIGHUP, SIGINT, SIGQUIT, 
+				   SIGBUS, SIGSEGV, SIGFPE };
+	sigset_t mask;
 
-	pthread_join(tid, NULL);
+	/* Handle Regular Signals */
+	sigemptyset(&mask);
+	for (i = 0; i < sizeof(sigs)/sizeof(int); i++)
+		sigaddset(&mask, sigs[i]);
+	sigwait(&mask, &i);
 
-
-	remove_msg(msgid);
+	sighandler(i);
 	return 0;
 }
 
@@ -180,34 +205,52 @@ pthread_t setup_conn(int role) {
 	socklen_t osize;
 	struct in_addr *val;
 
+	// snd_thread passed in a list of connected socket fd values
 	connection = (int *) malloc(sizeof(int) *( N_NODES - 1));
 
-	for (i = 1; i < role; i++) {
-		sockin = socket(AF_INET, SOCK_STREAM, 0); 
-		if (sockin == -1) {
-			perror("socket");
-			return -1;
-		}
-		addr.sin_family = AF_INET;
-		addr.sin_port = htons(PORT_NODEMANAGER);
-		inet_pton(AF_INET, "0.0.0.0", &addr.sin_addr);
-		if (bind(sockin, (struct sockaddr *) &addr, sizeof(addr)) == -1) {
-			perror("bind");
-			return -1;
-		}
-		if (listen(sockin, role-1) == -1) {
-			perror("listen");
-			return -1;
-		}
+	printf("Trying to Connect totally\n");
 
+	// Accept Connections for future started nm
+
+	// Create Socket
+	sockin = socket(AF_INET, SOCK_STREAM, 0); 
+	if (sockin == -1) {
+		perror("socket");
+		return -1;
+	}
+	iov = 1;
+	if (setsockopt(sockin, SOL_SOCKET, SO_REUSEADDR,
+					&iov, sizeof(int)) == -1) {
+		perror("setsockopt");
+	}
+	// Set values
+	memset(&addr, 0, sizeof(addr));
+	addr.sin_family = AF_INET;
+	addr.sin_port = htons(PORT_NODEMANAGER);
+	inet_pton(AF_INET, "0.0.0.0", &addr.sin_addr);
+	if (bind(sockin, (struct sockaddr *) &addr, sizeof(addr)) == -1) {
+		perror("bind");
+		return -1;
+	}
+	if (listen(sockin, 5) == -1) {
+		perror("listen");
+		return -1;
+	}
+
+	for (i = 1; i < role; i++) {
 		while ((sockout = accept(sockin, &other, &osize)) == -1 
-				&& errno == EINTR) ;
+				&& errno == EINTR) {
+			; // Nothing
+		}
 		if (sockout == -1) {
 			perror("accept");
+			return -1;
 		}
+		printf("NM: Accepted connection\n");
 
 		connection[i-1] = sockout;
-		if (pthread_create(&tid, NULL, rcv_thread, &other) != 0) {
+		printf("%d\n", sockout);
+		if (pthread_create(&tid, NULL, rcv_thread, &connection[i-1]) != 0) {
 			return -1;
 		}
 	}
@@ -218,6 +261,11 @@ pthread_t setup_conn(int role) {
 			perror("socket");
 			return -1;
 		}
+		iov = 1;
+		if (setsockopt(sockin, SOL_SOCKET, SO_REUSEADDR, 
+						&iov, sizeof(int)) == -1) {
+			perror("setsockopt");
+		}
 
 		hinfo = gethostbyname(HOSTS[i]); 
 		if (hinfo == NULL) {
@@ -225,10 +273,11 @@ pthread_t setup_conn(int role) {
 			return -1;
 		}
 
+		memset(&addr, 0, sizeof(addr));
 		addr.sin_port = htons(PORT_NODEMANAGER);
 		addr.sin_family = AF_INET; 
 
-		for ( j = 0 ; i < sizeof(hinfo->h_addr_list) / sizeof(char *); j++) {
+		for ( j = 0 ; j < sizeof(hinfo->h_addr_list) / sizeof(char *); j++) {
 			val = (struct in_addr *) hinfo->h_addr_list[j];
 			addr.sin_addr = *val;
 
@@ -241,9 +290,12 @@ pthread_t setup_conn(int role) {
 			}
 			else {
 				connection[i-2] = sockout;
+				printf("%d", sockout);
+				pthread_create(&tid, NULL, rcv_thread, &connection[i-2]);
 				break;
 			}
 		}
+		printf("NM: Connected to host: %s\n", HOSTS[i]);
 
 	}
 	if (pthread_create(&tid, NULL, snd_thread, connection) != 0) {
@@ -251,6 +303,7 @@ pthread_t setup_conn(int role) {
 		return -1;
 	}
 
+	printf("NM: Connections setup.\n");
 	return tid;
 }
 
@@ -277,7 +330,7 @@ void sighandler(int signal) {
 
 	terminate = 1;
 
-	fprintf(stderr, "BufferManager signal handler with signal #%d.\n", 
+	fprintf(stderr, "NodeManager signal handler with signal #%d.\n", 
 			signal);
 
 	if (msgctl(msgid, IPC_RMID, 0) == -1) {
@@ -298,7 +351,6 @@ int setsignals() {
 	int i, nsigs;
 	int sigs[] = { SIGTERM, SIGHUP, SIGINT, SIGQUIT, 
 				   SIGBUS, SIGSEGV, SIGFPE };
-
 	nsigs = sizeof(sigs) / sizeof(int);
 
 	/* Handle Regular Signals */
@@ -318,3 +370,4 @@ int setsignals() {
 	}
 	return 0;
 }
+

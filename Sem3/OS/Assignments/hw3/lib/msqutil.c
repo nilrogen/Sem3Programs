@@ -33,12 +33,12 @@ extern int request(int id, int mutex) {
 	pid = getpid();
 	type = (long) pid;
 	type <<= 16;
-	type |= mutex;
+	type |= (long) mutex;
 
 	req.rtype = RELEASEMSG;
 	req.pid = getpid();
 	req.mutex = mutex;
-	req.mtype = NMMTYPE;
+	req.mtype = 1L;
 	
 	while ((tmp = msgsnd(id, &req, len, 0)) == -1 && errno == EINTR) ;
 	if (tmp == -1) {
@@ -48,7 +48,7 @@ extern int request(int id, int mutex) {
 
 	while ((tmp = msgrcv(id, &req, len, type, 0)) == -1 && errno == EINTR) ; 
 	if (tmp == -1) {
-		perror("msgrcv");
+		perror("msgrcv request");
 		return -1;
 	}
 	return 0;
@@ -90,7 +90,7 @@ extern nmrequest_t msq_next(int id) {
 		return req;
 	}
 	if (tmp == -1) {
-		perror("msgrcv WTF"); 
+		perror("msgrcv msq_next"); 
 		fprintf(stderr, "%d\n", errno);
 		exit(0);
 		req.mtype = -1;

@@ -32,7 +32,9 @@ int main(int argc, char *argv[]) {
 		type = 0;
 		printf("PRODUCER - Requesting Mutex\n");
 		if (request(mid, type) == -1) {
+			return -1;
 			sighandler(-1);	
+
 		}
 
 		val = bmproduce(sockfd, type);
@@ -46,7 +48,6 @@ int main(int argc, char *argv[]) {
 		if ( release(mid, type) == -1) {
 			return -1;
 		}
-		break; // TODO DELETE
 	}
 	
 
