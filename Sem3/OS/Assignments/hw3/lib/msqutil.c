@@ -111,7 +111,7 @@ extern int msq_reply(int id, int mutex, int pid, int eval) {
 
 	type = (long) pid;
 	type <<= 16;
-	type |= mutex;
+	type |= (long) mutex;
 
 	rep.mtype = type;
 	rep.errorval = eval;

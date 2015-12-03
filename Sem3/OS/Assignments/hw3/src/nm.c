@@ -8,13 +8,14 @@ static const char *HOSTS[] = { "", "cs91515-2", "cs91515-3", "cs91515-4"};
 
 //static pthread_mutex_t utillock;
 static lmp_mutex_t *lmutex[N_MUTEX];
+static int *connections;
 
 static int msgid;
 static int nodenumber;
 
 static int terminate;
 
-static void sendtoall(int *, nmsg_t);
+static void sendtoall(nmsg_t);
 static pthread_t setup_conn(int);
 
 static void sighandler(int);
@@ -43,59 +44,48 @@ void *rcv_thread(void *data) {
 		// Convert
 		msg.mutex = ntohl(msg.mutex);
 		msg.lm = nmsgtoh(msg.lm);
+		
 
 		switch (msg.lm.type) {
 		case LREQUEST:
-			handle_request(lmutex[msg.mutex], msg.lm);
+			fprintf(stderr, "NM: requst message from fd: %d.\n", sockfd);
+			if (handle_request(lmutex[msg.mutex], msg.lm) == -1)
+				fprintf(stderr, "NM: Failed to handle request.\n");
+			// SEND A REPLY.....
+			msg.lm.type = LREPLY;
+			msg.mutex = htonl(msg.mutex);
+			msg.lm = hmsgton(msg.lm);
+			while ((tmp = write(sockfd, &msg, sizeof(nmsg_t))) == -1 &&
+					errno == EINTR) ; // Nothing
+			if (tmp == -1) {
+				perror("Failed to send");
+				sighandler(-2);
+			}
+
 			break;
 		case LREPLY: 
+			fprintf(stderr, "NM: reply message from fd: %d.\n", sockfd);
 			handle_reply(lmutex[msg.mutex], msg.lm);
 			break;
 		case LRELEASE:
+			fprintf(stderr, "NM: release message from fd: %d.\n", sockfd);
 			handle_release(lmutex[msg.mutex]);
 			break;
+		default:
+			sighandler(-2);
 		}
 	}
 	sighandler(-1);
 	return NULL;
 }
 
-void *snd_thread(void *data) {
-	int i;
-	lmsg_t *hmsg;
+void *msq_thread(void *data) {
 	nmsg_t msg;
 	nmrequest_t req;
-	int *connections = (int *) data;
 
 	setsignals();
-	
-	assert(connections != NULL);
-	printf("NM: %d\n", sizeof(connections) / sizeof(int));
-	for (i = 0; i < sizeof(connections) / sizeof(int); i++) {
-		printf("NM: %d\n", connections[i]);
-	}
-
 
 	while (terminate == 0) {
-		// Check if any queues can go (replied from all nodes)
-		for (i = 0 ; i < N_MUTEX; i++) {
-			// If empty
-			if (lmutex[i]->queue->length == 0)
-				continue;
-
-			// Check head
-			hmsg = DATA(peek(lmutex[i]->queue));
-			if (hmsg->replies == N_NODES) {
-				// Tell Process it can go
-				printf("NM: Process %d reply\n", hmsg->pid);
-				if (msq_reply(msgid, i, hmsg->pid, 0) == -1) {
-					fprintf(stderr, "Failure to reply.\n");
-				}
-
-			}
-		}
-
-		// Get the next message from the message queue
 		req = msq_next(msgid);
 		if (req.mtype == -2L) { // If no messages sleep
 			usleep(100);
@@ -132,8 +122,39 @@ void *snd_thread(void *data) {
 		}
 
 		// Send to connected entities
-		printf("Seending to all");
-		sendtoall(connections, msg);
+		printf("Sending to all");
+		sendtoall(msg);
+	}
+	return NULL;
+}
+
+void *mutex_thread(void *data) {
+	int i;
+	nmsg_t msg;
+	lmsg_t *hmsg;
+
+	setsignals();
+	
+	while (terminate == 0) {
+		memset(&msg, 0, sizeof(msg));
+		// Check if any queues can go (replied from all nodes)
+		for (i = 0 ; i < N_MUTEX; i++) {
+			// If empty
+			if (lmutex[i]->queue->length == 0)
+				continue;
+
+			// Check head
+			hmsg = DATA(peek(lmutex[i]->queue));
+			if (hmsg->replies == N_NODES) {
+				// Tell Process it can go
+				printf("NM: Process %d reply\n", hmsg->pid);
+				if (msq_reply(msgid, i, hmsg->pid, 0) == -1) {
+					fprintf(stderr, "Failure to reply.\n");
+				}
+
+			}
+		}
+		usleep(100);
 	}
 	sighandler(-1);
 	return NULL;
@@ -195,7 +216,6 @@ int main(int argc, char *argv[]) {
 
 pthread_t setup_conn(int role) {
 	int i, j, iov, sockin, sockout;
-	int *connection;
 	pthread_t tid;
 	struct hostent *hinfo;
 	struct sockaddr_in addr;
@@ -204,9 +224,9 @@ pthread_t setup_conn(int role) {
 	struct in_addr *val;
 
 	// snd_thread passed in a list of connected socket fd values
-	connection = (int *) malloc(sizeof(int) *( N_NODES - 1));
+	connections = (int *) malloc(sizeof(int) *( N_NODES - 1));
 
-	printf("Trying to Connect totally\n");
+	printf("NM: Trying to Connect to all nodes\n");
 
 	// Accept Connections for future started nm
 
@@ -246,9 +266,8 @@ pthread_t setup_conn(int role) {
 		}
 		printf("NM: Accepted connection\n");
 
-		connection[i-1] = sockout;
-		printf("%d\n", sockout);
-		if (pthread_create(&tid, NULL, rcv_thread, &connection[i-1]) != 0) {
+		connections[i-1] = sockout;
+		if (pthread_create(&tid, NULL, rcv_thread, &connections[i-1]) != 0) {
 			return -1;
 		}
 	}
@@ -287,17 +306,20 @@ pthread_t setup_conn(int role) {
 				perror("connect failed");
 			}
 			else {
-				connection[i-2] = sockout;
-				printf("%d", sockout);
-				pthread_create(&tid, NULL, rcv_thread, &connection[i-2]);
+				connections[i-2] = sockout;
+				pthread_create(&tid, NULL, rcv_thread, &connections[i-2]);
 				break;
 			}
 		}
 		printf("NM: Connected to host: %s\n", HOSTS[i]);
 
 	}
-	if (pthread_create(&tid, NULL, snd_thread, connection) != 0) {
-		fprintf(stderr, "Failed to create snd_thread.\n");
+	if (pthread_create(&tid, NULL, mutex_thread, NULL) != 0) {
+		fprintf(stderr, "Failed to create mutex_thread.\n");
+		return -1;
+	}
+	if (pthread_create(&tid, NULL, msq_thread, NULL) != 0) {
+		fprintf(stderr, "Failed to create msq_thread.\n");
 		return -1;
 	}
 
@@ -305,15 +327,17 @@ pthread_t setup_conn(int role) {
 	return tid;
 }
 
-static void sendtoall(int *conns, nmsg_t msg) {
+static void sendtoall(nmsg_t msg) {
 	int i, iov;
+
+	printf("NM: Sending request to connected channels.\n");
 
 	msg.mutex = htonl(msg.mutex);
 	msg.lm = hmsgton(msg.lm);
 
 
 	for (i = 0 ; i < N_NODES - 1; i++) {
-		while ((iov = write(conns[i], &msg, sizeof(msg))) == -1 
+		while ((iov = write(connections[i], &msg, sizeof(msg))) == -1 
 				&& errno == EINTR)
 			; // nothing
 
@@ -325,8 +349,14 @@ static void sendtoall(int *conns, nmsg_t msg) {
 
 void sighandler(int signal) {
 	int i; 
+	nmsg_t msg;
 
 	terminate = 1;
+
+	if (signal == -2) {
+		msg.mutex = -1;
+		sendtoall(msg);
+	}
 
 	fprintf(stderr, "NodeManager signal handler with signal #%d.\n", 
 			signal);

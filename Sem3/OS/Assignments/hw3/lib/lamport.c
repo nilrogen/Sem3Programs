@@ -207,6 +207,7 @@ extern int handle_reply(lmp_mutex_t *mutex, lmsg_t msg) {
 		return -1;
 	}
 	candidate->replies++;
+
 	pthread_mutex_unlock(&mutex->lock);
 
 	return 0;

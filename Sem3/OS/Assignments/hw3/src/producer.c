@@ -30,12 +30,13 @@ int main(int argc, char *argv[]) {
 
 
 		type = 0;
-		printf("PRODUCER - Requesting Mutex\n");
+		printf("PRODUCER: Requesting Mutex\n");
 		if (request(mid, type) == -1) {
 			return -1;
 			sighandler(-1);	
 
 		}
+		printf("PRODUCER: Got Mutex\n");
 
 		val = bmproduce(sockfd, type);
 		if (val == -1) {

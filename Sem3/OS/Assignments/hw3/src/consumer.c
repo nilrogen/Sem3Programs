@@ -22,6 +22,7 @@ int main(int argc, char *argv[]) {
 
 		type = 0;
 		if (request(mid, type + 4) == -1) {
+		// WHAT?
 			printf("BADSHIT HAPPEND YO\n.");
 			return -1;
 		}
