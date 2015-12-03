@@ -7,23 +7,25 @@ static int setupconnection();
 
 int main(int argc, char *argv[]) {
 	int sockfd, val, type, mid;
+	int i;
 
 	if ((mid = open_msg(MQ_KEY)) == -1) {
 		fprintf(stderr, "Failed to open message queue\n");
 		exit(1);
 	}
+	srand(getpid());
 
+	for (i = 0; i < 120; i++) {
 	/* loop for some time */
-	while (1) {
+
+		type = rand() % 4;
+		if (request(mid, type + 4) == -1) {
+			fprintf(stderr, "CONSUMER: Request Failed.\n");
+			return -1;
+		}
 		sockfd = setupconnection();
 		if (sockfd == -1) {
-			return 0;
-		}
-
-		type = 0;
-		if (request(mid, type + 4) == -1) {
-		// WHAT?
-			printf("BADSHIT HAPPEND YO\n.");
+			release(mid, type + 4);
 			return -1;
 		}
 
@@ -31,10 +33,13 @@ int main(int argc, char *argv[]) {
 		if (val == -1) {
 			bmperror("Failed to consume");
 		}
-		fprintf(stderr, "CONSUMER -- CONSUMED VALUE %d\n", val);
+		fprintf(stderr, "CONSUMER: type - %d, value - %d\n", type, val);
+
+		if (release(mid, type + 4) == -1) {
+			return -1;
+		}
 
 		close(sockfd);	
-		break; // TODO DELETE
 	}
 
 
@@ -65,7 +70,6 @@ int setupconnection() {
 	for (i = 0; i < sizeof(hinfo->h_addr_list) / sizeof(char *); i++) {
 		val = (struct in_addr *) hinfo->h_addr_list[i];
 		addr.sin_addr = *val;
-		printf("PRODUCER -- BMIP - %s\n", inet_ntoa(addr.sin_addr));
 
 		while ((cval = connect(sockfd, (struct sockaddr *) &addr,
 				sizeof(addr))) == -1 && errno == EINTR) ; // Handle EINTR

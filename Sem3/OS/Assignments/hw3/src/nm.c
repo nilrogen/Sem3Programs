@@ -8,6 +8,7 @@ static const char *HOSTS[] = { "", "cs91515-2", "cs91515-3", "cs91515-4"};
 
 //static pthread_mutex_t utillock;
 static lmp_mutex_t *lmutex[N_MUTEX];
+static pthread_mutex_t writelock;
 static int *connections;
 
 static int msgid;
@@ -47,31 +48,42 @@ void *rcv_thread(void *data) {
 		
 
 		switch (msg.lm.type) {
-		case LREQUEST:
-			fprintf(stderr, "NM: requst message from fd: %d.\n", sockfd);
-			if (handle_request(lmutex[msg.mutex], msg.lm) == -1)
+		case LREQUEST: // Handle a request message
+			fprintf(stderr, "NM: request message NODE: %d CLOCK: %d\n", 
+					msg.lm.node, msg.lm.clock);
+			if ((msg.lm.clock = handle_request(
+						lmutex[msg.mutex], msg.lm)) == -1)
 				fprintf(stderr, "NM: Failed to handle request.\n");
 			// SEND A REPLY.....
 			msg.lm.type = LREPLY;
+			msg.lm.node = nodenumber;
 			msg.mutex = htonl(msg.mutex);
 			msg.lm = hmsgton(msg.lm);
+
+			pthread_mutex_lock(&writelock);
 			while ((tmp = write(sockfd, &msg, sizeof(nmsg_t))) == -1 &&
 					errno == EINTR) ; // Nothing
+			pthread_mutex_unlock(&writelock);
 			if (tmp == -1) {
 				perror("Failed to send");
 				sighandler(-2);
 			}
 
 			break;
-		case LREPLY: 
-			fprintf(stderr, "NM: reply message from fd: %d.\n", sockfd);
-			handle_reply(lmutex[msg.mutex], msg.lm);
+		case LREPLY:  // Handle Reply 
+			fprintf(stderr, "NM: reply message NODE %d CLOCK %d.\n", 
+					msg.lm.node, msg.lm.clock);
+
+			if (handle_reply(lmutex[msg.mutex], msg.lm) == -1) {
+				fprintf(stderr, "NM: Failed to handle request.\n");
+			}
 			break;
-		case LRELEASE:
-			fprintf(stderr, "NM: release message from fd: %d.\n", sockfd);
+		case LRELEASE: // Handle release
+			fprintf(stderr, "NM: release message NODE: %d.\n", msg.lm.node);
 			handle_release(lmutex[msg.mutex]);
 			break;
-		default:
+		default: // Error IE other nm closed so we close without informing
+				 // Then other nm's
 			sighandler(-2);
 		}
 	}
@@ -101,8 +113,9 @@ void *msq_thread(void *data) {
 
 		// If a local process releases its mutex then we locally handle the
 		// release and send a release message to all the 
-		if (req.rtype == LRELEASE) {
-			msg.lm = *handle_release(lmutex[msg.mutex]);
+		if (req.rtype == RELEASEMSG) {
+			assert(lmutex[req.mutex]->queue->length != 0);
+			msg.lm = *handle_release(lmutex[req.mutex]);
 		}
 		else {
 
@@ -122,7 +135,7 @@ void *msq_thread(void *data) {
 		}
 
 		// Send to connected entities
-		printf("Sending to all");
+		printf("Sending to all\n");
 		sendtoall(msg);
 	}
 	return NULL;
@@ -147,9 +160,12 @@ void *mutex_thread(void *data) {
 			hmsg = DATA(peek(lmutex[i]->queue));
 			if (hmsg->replies == N_NODES) {
 				// Tell Process it can go
-				printf("NM: Process %d reply\n", hmsg->pid);
+				//printf("NM: Process %d reply\n", hmsg->pid);
 				if (msq_reply(msgid, i, hmsg->pid, 0) == -1) {
 					fprintf(stderr, "Failure to reply.\n");
+				}
+				else {
+					hmsg->replies++; // Mark as going
 				}
 
 			}
@@ -330,21 +346,22 @@ pthread_t setup_conn(int role) {
 static void sendtoall(nmsg_t msg) {
 	int i, iov;
 
-	printf("NM: Sending request to connected channels.\n");
+	//printf("NM: Sending request to connected channels.\n");
 
 	msg.mutex = htonl(msg.mutex);
 	msg.lm = hmsgton(msg.lm);
 
 
+	pthread_mutex_lock(&writelock);
 	for (i = 0 ; i < N_NODES - 1; i++) {
 		while ((iov = write(connections[i], &msg, sizeof(msg))) == -1 
 				&& errno == EINTR)
 			; // nothing
-
 		if (iov == -1) {
 			perror("write failed");
 		}
 	}
+	pthread_mutex_unlock(&writelock);
 }
 
 void sighandler(int signal) {
@@ -353,8 +370,8 @@ void sighandler(int signal) {
 
 	terminate = 1;
 
-	if (signal == -2) {
-		msg.mutex = -1;
+	if (signal != -1) {
+		msg.lm.type = -1;
 		sendtoall(msg);
 	}
 

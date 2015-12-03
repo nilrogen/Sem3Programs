@@ -10,8 +10,8 @@
 #define NMMTYPE 1L
 
 #define REQUESTMSG 0
-#define RELEASEMSG 1
-#define REPLYMSG   2
+#define REPLYMSG   1
+#define RELEASEMSG 2
 
 typedef struct {
 	long mtype;

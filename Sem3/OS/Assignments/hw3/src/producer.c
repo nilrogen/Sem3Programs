@@ -20,33 +20,35 @@ int main(int argc, char *argv[]) {
 		fprintf(stderr, "Failed to open message queue\n");
 		sighandler(-1);
 	}
+
+	srand(getpid());
 	
 	while (1) {
-		sockfd = setupconnection();
-		if (sockfd == -1) {
-			remove_msg(mid);
-			return -1;
-		}
 
 
-		type = 0;
-		printf("PRODUCER: Requesting Mutex\n");
+		type = rand() % 4;
+		//printf("PRODUCER: Requesting Mutex\n");
 		if (request(mid, type) == -1) {
 			return -1;
 			sighandler(-1);	
-
 		}
-		printf("PRODUCER: Got Mutex\n");
+		//printf("PRODUCER: Got Mutex\n");
+
+		sockfd = setupconnection();
+		if (sockfd == -1) {
+			release(mid, type);
+			return -1;
+		}
 
 		val = bmproduce(sockfd, type);
 		if (val == -1) {
 			bmperror("Failed to produce");
 		}
-		printf("PRODUCER -- PRODUCED VALUE %d\n", val);
+		printf("PRODUCER: type - %d, Value - %d\n", type, val);
 
 		close(sockfd);	
 		
-		if ( release(mid, type) == -1) {
+		if (release(mid, type) == -1) {
 			return -1;
 		}
 	}

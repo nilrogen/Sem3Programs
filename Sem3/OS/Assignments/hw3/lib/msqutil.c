@@ -27,6 +27,7 @@ extern int request(int id, int mutex) {
 	int tmp, pid;
 	long type;
 	nmrequest_t req;
+	nmreply_t rep;
 	
 	size_t len = sizeof(nmrequest_t) - sizeof(long);
 
@@ -35,7 +36,7 @@ extern int request(int id, int mutex) {
 	type <<= 16;
 	type |= (long) mutex;
 
-	req.rtype = RELEASEMSG;
+	req.rtype = REQUESTMSG;
 	req.pid = getpid();
 	req.mutex = mutex;
 	req.mtype = 1L;
@@ -46,7 +47,9 @@ extern int request(int id, int mutex) {
 		return -1;
 	}
 
-	while ((tmp = msgrcv(id, &req, len, type, 0)) == -1 && errno == EINTR) ; 
+	len = sizeof(nmreply_t) - sizeof(long);
+
+	while ((tmp = msgrcv(id, &rep, len, type, 0)) == -1 && errno == EINTR) ; 
 	if (tmp == -1) {
 		perror("msgrcv request");
 		return -1;
@@ -67,7 +70,7 @@ extern int release(int id, int mutex) {
 	req.rtype = RELEASEMSG;
 	req.pid = getpid();
 	req.mutex = mutex;
-	req.mtype = NMMTYPE;
+	req.mtype = 1L;
 	
 	while ((tmp = msgsnd(id, &req, len, 0)) == -1 && errno == EINTR) ; 
 	if (tmp == -1) {
