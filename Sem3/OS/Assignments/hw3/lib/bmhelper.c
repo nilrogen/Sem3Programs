@@ -59,7 +59,6 @@ extern int bmproduce(int sockfd, int type) {
 	return handle(sockfd, msg);
 }
 
-
 extern void bmperror(const char *str) {
 	fprintf(stderr, "%s:   \n", str);
 }

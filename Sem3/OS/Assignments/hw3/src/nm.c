@@ -1,7 +1,7 @@
 #include "nm.h"
 
 // Role = LOCALHOST
-static const char *HOSTS[] = { "", "cs91515-2", "cs91515-3", "cs91515-4"};
+static const char *HOSTS[] = { "", "cs91515-6", "cs91515-3", "cs91515-6"};
 #define N_HOSTS (sizeof(HOSTS) / sizeof(char *))
 #define N_NODES (N_HOSTS - 1)
 
@@ -49,21 +49,22 @@ void *rcv_thread(void *data) {
 
 		switch (msg.lm.type) {
 		case LREQUEST: // Handle a request message
-			fprintf(stderr, "NM: request message NODE: %d CLOCK: %d\n", 
-					msg.lm.node, msg.lm.clock);
+			//fprintf(stderr, "NM: request message NODE: %d CLOCK: %d\n", 
+					//msg.lm.node, msg.lm.clock);
 			if ((msg.lm.clock = handle_request(
 						lmutex[msg.mutex], msg.lm)) == -1)
 				fprintf(stderr, "NM: Failed to handle request.\n");
 			// SEND A REPLY.....
-			msg.lm.type = LREPLY;
-			msg.lm.node = nodenumber;
-			msg.mutex = htonl(msg.mutex);
-			msg.lm = hmsgton(msg.lm);
+			msg.lm.type = LREPLY; // Set type
+			msg.lm.node = nodenumber; // Set node number to self
 
-			pthread_mutex_lock(&writelock);
+			msg.mutex = htonl(msg.mutex); // set and convert mutex number 
+			msg.lm = hmsgton(msg.lm); // convert lamport message
+
+			//pthread_mutex_lock(&writelock);
 			while ((tmp = write(sockfd, &msg, sizeof(nmsg_t))) == -1 &&
 					errno == EINTR) ; // Nothing
-			pthread_mutex_unlock(&writelock);
+			//pthread_mutex_unlock(&writelock);
 			if (tmp == -1) {
 				perror("Failed to send");
 				sighandler(-2);
@@ -71,8 +72,8 @@ void *rcv_thread(void *data) {
 
 			break;
 		case LREPLY:  // Handle Reply 
-			fprintf(stderr, "NM: reply message NODE %d CLOCK %d.\n", 
-					msg.lm.node, msg.lm.clock);
+			//fprintf(stderr, "NM: reply message NODE %d CLOCK %d.\n", 
+					//msg.lm.node, msg.lm.clock);
 
 			if (handle_reply(lmutex[msg.mutex], msg.lm) == -1) {
 				fprintf(stderr, "NM: Failed to handle request.\n");
@@ -113,11 +114,16 @@ void *msq_thread(void *data) {
 
 		// If a local process releases its mutex then we locally handle the
 		// release and send a release message to all the 
+		pthread_mutex_lock(&lmutex[msg.mutex]->lock);
 		if (req.rtype == RELEASEMSG) {
-			assert(lmutex[req.mutex]->queue->length != 0);
+			assert(lmutex[req.mutex]->queue->head != NULL);
+			assert(((lmsg_t *)lmutex[req.mutex]->queue->head->data)->replies == 4);
+			pthread_mutex_unlock(&lmutex[req.mutex]->lock);
 			msg.lm = *handle_release(lmutex[req.mutex]);
+			fprintf(stderr, "NM: PID %d - Completed\n", msg.lm.pid);
 		}
 		else {
+			pthread_mutex_unlock(&lmutex[req.mutex]->lock);
 
 			// Handle next request
 			msg.lm.type = LREQUEST;
@@ -127,6 +133,7 @@ void *msq_thread(void *data) {
 			msg.lm.replies = 1;
 
 			// Add to lamport mutex
+			fprintf(stderr, "NM: PID %d Requesting mutex %d\n", msg.lm.pid, msg.mutex);
 			msg.lm.clock = handle_request(lmutex[msg.mutex], msg.lm);
 			if (msg.lm.clock == -1) {
 				fprintf(stderr, "Failed to handle request.\n");
@@ -135,8 +142,9 @@ void *msq_thread(void *data) {
 		}
 
 		// Send to connected entities
-		printf("Sending to all\n");
+		//printf("Sending to all\n");
 		sendtoall(msg);
+		usleep(100);
 	}
 	return NULL;
 }
@@ -153,9 +161,12 @@ void *mutex_thread(void *data) {
 		// Check if any queues can go (replied from all nodes)
 		for (i = 0 ; i < N_MUTEX; i++) {
 			// If empty
-			if (lmutex[i]->queue->length == 0)
-				continue;
 
+			pthread_mutex_lock(&lmutex[i]->lock);
+			if (lmutex[i]->queue->head == NULL) {
+				pthread_mutex_unlock(&lmutex[i]->lock);
+				continue;
+			}
 			// Check head
 			hmsg = DATA(peek(lmutex[i]->queue));
 			if (hmsg->replies == N_NODES) {
@@ -167,8 +178,8 @@ void *mutex_thread(void *data) {
 				else {
 					hmsg->replies++; // Mark as going
 				}
-
 			}
+			pthread_mutex_unlock(&lmutex[i]->lock);
 		}
 		usleep(100);
 	}
@@ -350,7 +361,6 @@ static void sendtoall(nmsg_t msg) {
 
 	msg.mutex = htonl(msg.mutex);
 	msg.lm = hmsgton(msg.lm);
-
 
 	pthread_mutex_lock(&writelock);
 	for (i = 0 ; i < N_NODES - 1; i++) {

@@ -33,8 +33,9 @@ extern int request(int id, int mutex) {
 
 	pid = getpid();
 	type = (long) pid;
+	/*
 	type <<= 16;
-	type |= (long) mutex;
+	type |= (long) mutex;*/
 
 	req.rtype = REQUESTMSG;
 	req.pid = getpid();
@@ -72,6 +73,7 @@ extern int release(int id, int mutex) {
 	req.mutex = mutex;
 	req.mtype = 1L;
 	
+	//fprintf(stderr, "Releaseing mutex\n");
 	while ((tmp = msgsnd(id, &req, len, 0)) == -1 && errno == EINTR) ; 
 	if (tmp == -1) {
 		perror("msgsnd");
@@ -113,13 +115,13 @@ extern int msq_reply(int id, int mutex, int pid, int eval) {
 	size_t len = sizeof(nmreply_t) - sizeof(long);
 
 	type = (long) pid;
-	type <<= 16;
-	type |= (long) mutex;
+	//type <<= 16;
+	//type |= (long) mutex; 
 
 	rep.mtype = type;
 	rep.errorval = eval;
 
-
+	fprintf(stderr, "SNEDING MESSAGE ON %ld\n", type);
 	while ((tmp = msgsnd(id, &rep, len, 0)) == -1 && errno == EINTR) ;
 	if (tmp == -1) {
 		perror("msgsnd");

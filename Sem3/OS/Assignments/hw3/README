@@ -1,0 +1,36 @@
+Michael Gorlin
+Assignment 3
+Degree of Success 80%
+2015-12-10
+
+	I am submitting a incomplete solution to this assignment. I've probably
+put in about 100 hours working on it. I'm tired of trying to fix my issue
+and it's interfering with my other assignments, so I'm cutting my losses
+and submitting it. 
+
+	The issue that is preventing my program from working seems to be 
+something with my Lamport implementation and how I communicate over the
+message queue. My program seems to work for a few iterations then seems to
+slowly halt. Honestly I should have completely rewritten both the lamport.c
+and nm.c files days ago instead of trying to identify whatever issue I have. 
+	Highly likely there is an issue in how I deal with mutual exclusion between
+how I manipulate my lmp_mutex_t structure. Sometimes I get a segfault that
+shouldn't happen when I access the first element in then queue. Maybe there is
+an issue with my list structure that I wrote 2 months ago.
+
+	Anyways you can see what I have done in the following directories. As an
+added challenge that I set well before the assignment was formally given, 
+I conformed to a normal Linux directory structure. The "bin" directory contains
+the binary files to execute my program. The "include" and "lib" directories 
+contain the necessary .h and .c files respectively. They are compiled into .o
+files that are stored in the "build" directory. The "src" directory contains
+the code for the binary files. 
+
+	My program can be run using the run.sh script, on the following computers:
+		cs91515-3
+		cs91515-5
+		cs91515-6
+
+	The buffer manager is run on cs91515-6. You can use the destroy.sh script
+to kill all the programs running.
+

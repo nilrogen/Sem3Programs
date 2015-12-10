@@ -22,7 +22,6 @@
 #define PORT_BUFFERMANAGER 40069
 #define PORT_NODEMANAGER   40070
 
-#define HOSTNAME "cs91515-4"
-
+#define HOSTNAME "cs91515-6"
 
 #endif 

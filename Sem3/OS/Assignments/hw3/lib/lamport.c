@@ -110,7 +110,7 @@ extern int handle_request(lmp_mutex_t *mutex, lmsg_t msg) {
 
 	// Handle request with clock value >= own clock value
 	// Or when queue is empty
-	if (msg.clock >= mutex->clock || mutex->queue->length == 0) {
+	if (msg.clock >= mutex->clock || mutex->queue->head == NULL) {
 		mutex->clock = msg.clock;
 		if (enqueue(mutex->queue, (void *) addv) == -1) {
 			fprintf(stderr, "Failed to enqueue.\n");
@@ -198,6 +198,7 @@ extern int handle_reply(lmp_mutex_t *mutex, lmsg_t msg) {
 			if (val->clock == msg.clock)
 				break;
 		}
+		val = DATA(next(&iter));
 	}
 
 	
@@ -221,7 +222,7 @@ extern lmsg_t *handle_release(lmp_mutex_t *mutex) {
 	}
 
 	pthread_mutex_lock(&mutex->lock);
-	retv  = DATA(dequeue(mutex->queue)); 
+	retv = DATA(dequeue(mutex->queue)); 
 
 	// The return value is ignored in the rcv_threads
 	// But the return value is sent in the snd_thread
@@ -234,3 +235,4 @@ extern lmsg_t *handle_release(lmp_mutex_t *mutex) {
 
 	return retv;
 }
+

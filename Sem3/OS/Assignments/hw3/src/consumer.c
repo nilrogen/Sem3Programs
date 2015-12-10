@@ -15,7 +15,7 @@ int main(int argc, char *argv[]) {
 	}
 	srand(getpid());
 
-	for (i = 0; i < 120; i++) {
+	for (i = 0; i < 60; i++) {
 	/* loop for some time */
 
 		type = rand() % 4;
@@ -40,6 +40,7 @@ int main(int argc, char *argv[]) {
 		}
 
 		close(sockfd);	
+		usleep(100);
 	}
 
 

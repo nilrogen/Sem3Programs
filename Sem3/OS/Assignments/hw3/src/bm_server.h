@@ -13,7 +13,7 @@
 
 #define HOST_IP "0.0.0.0" 
 
-#define N_ITEMS 20
+#define N_ITEMS 100
 #define N_RINGS 4
 
 typedef struct {

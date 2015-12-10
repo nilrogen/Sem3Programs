@@ -29,7 +29,6 @@ int main(int argc, char *argv[]) {
 		type = rand() % 4;
 		//printf("PRODUCER: Requesting Mutex\n");
 		if (request(mid, type) == -1) {
-			return -1;
 			sighandler(-1);	
 		}
 		//printf("PRODUCER: Got Mutex\n");
@@ -37,7 +36,7 @@ int main(int argc, char *argv[]) {
 		sockfd = setupconnection();
 		if (sockfd == -1) {
 			release(mid, type);
-			return -1;
+			sighandler(-1);
 		}
 
 		val = bmproduce(sockfd, type);
@@ -46,11 +45,10 @@ int main(int argc, char *argv[]) {
 		}
 		printf("PRODUCER: type - %d, Value - %d\n", type, val);
 
-		close(sockfd);	
-		
 		if (release(mid, type) == -1) {
 			return -1;
 		}
+		close(sockfd);	
 	}
 	
 
@@ -129,7 +127,6 @@ int setupconnection() {
 	}
 
 	if (cval == -1) {
-		perror("Connect failed");
 		return -1;
 	}
 

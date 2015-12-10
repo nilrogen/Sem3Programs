@@ -49,7 +49,7 @@ static int produce(int type) {
 
 	int i, j;
 	for (i = 0; i < N_RINGS; i++) {
-		for (j = 0; j < N_ITEMS; j++) {
+		for (j = 0; j < N_ITEMS; j+=4) {
 			printf("%d ", ring->buffer[i][j]);
 		}
 		printf("\n");
@@ -72,7 +72,7 @@ static int consume(int type) {
 	int i, j;
 	printf("\n");
 	for (i = 0; i < N_RINGS; i++) {
-		for (j = 0; j < N_ITEMS; j++) {
+		for (j = 0; j < N_ITEMS; j+= 4) {
 			printf("%d ", ring->buffer[i][j]);
 		}
 		printf("\n");
@@ -236,7 +236,7 @@ int setupsocket() {
 		perror("Failed to bind socket");
 		return -1;
 	}
-	if (listen(sockfd, 5) == -1) {
+	if (listen(sockfd, 1000) == -1) {
 		perror("listen failed");
 		return -1;
 	}
@@ -267,6 +267,7 @@ int setsems() {
 				return -1;
 			}
 		}
+		memset(&sc, sizeof(sc), 0);
 		sc.val = 0; // semid[1] consumer
 	}
 	return 0;
